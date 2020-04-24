@@ -12,6 +12,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
@@ -36,13 +37,20 @@ public class HomeViewModel extends AndroidViewModel {
     private Data dataInput;
     private OneTimeWorkRequest loadSingleData;
 
-    public LiveData<WorkInfo> getSingleState() {
-        return singleState;
+    //constructor
+    public HomeViewModel(@NonNull Application application) {
+        super(application);
+
+        workManager = WorkManager.getInstance(getApplication());
+        repository = new Repository(application);
+        selectionMutableLiveData = new MutableLiveData<>();
+        //****
+        setProgramId(0);
+        Log.d(TAG, "init");
     }
 
-    private LiveData<WorkInfo> singleState;
 
-
+    //
     public void setProgramId(int programId) {
         this.programId = programId;
         dataInput = new Data.Builder()
@@ -53,21 +61,10 @@ public class HomeViewModel extends AndroidViewModel {
                 .setInputData(dataInput)
                 .addTag("Load")
                 .build();
-        singleState = workManager.getWorkInfoByIdLiveData(loadSingleData.getId());
+        //singleState = workManager.getWorkInfoByIdLiveData(loadSingleData.getId());
+
     }
 
-    public HomeViewModel(@NonNull Application application) {
-        super(application);
-
-        workManager = WorkManager.getInstance(getApplication());
-        repository = new Repository(application);
-        selectionMutableLiveData = new MutableLiveData<>();
-
-        //****
-        setProgramId(0);
-
-        Log.d(TAG, "init");
-    }
 
     public MutableLiveData<Selection> getSelectionMutableLiveData() {
         return selectionMutableLiveData;
@@ -80,8 +77,8 @@ public class HomeViewModel extends AndroidViewModel {
 
     //TODO::
     void setItemFromId(int id){
-        if(!isConnected()){
-            workManager.enqueue(loadSingleData);
+        if(isConnected()){
+            workManager.beginUniqueWork("Single", ExistingWorkPolicy.REPLACE,loadSingleData).enqueue();
         } else {
             repository.getSelectionFromId(id, selection -> {
                 selectionMutableLiveData.postValue(selection);
@@ -97,3 +94,27 @@ public class HomeViewModel extends AndroidViewModel {
     }
 
 }
+
+
+//    public void createAndRunWorker(int id, HomeFragment.Cb cb) {
+//        this.programId = programId;
+//        dataInput = new Data.Builder()
+//                .putString("url",url)
+//                .putString("programId",String.valueOf(programId))
+//                .build();
+//        loadSingleData = new OneTimeWorkRequest.Builder(LoadSingleData.class)
+//                .setInputData(dataInput)
+//                .addTag("Load")
+//                .build();
+//        singleState = workManager.getWorkInfoByIdLiveData(loadSingleData.getId());
+//
+//        cb.call(singleState);
+//
+//        if(isConnected()){
+//            workManager.beginUniqueWork("Single", ExistingWorkPolicy.REPLACE,loadSingleData).enqueue();
+//        } else {
+//            repository.getSelectionFromId(id, selection -> {
+//                selectionMutableLiveData.postValue(selection);
+//            });
+//        }
+//    }

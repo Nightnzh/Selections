@@ -7,9 +7,11 @@
 
     <EditText
         android:id="@+id/editText"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
         android:layout_marginTop="8dp"
+        android:layout_marginEnd="32dp"
         android:layout_marginBottom="32dp"
         android:ems="10"
         android:hint="@string/programid"
@@ -21,9 +23,11 @@
 
     <TextView
         android:id="@+id/textView__"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
         android:layout_marginTop="32dp"
+        android:layout_marginEnd="32dp"
         android:layout_marginBottom="8dp"
         android:text="Enter ID :"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"

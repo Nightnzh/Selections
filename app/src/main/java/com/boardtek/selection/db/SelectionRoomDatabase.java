@@ -39,6 +39,7 @@ public abstract class SelectionRoomDatabase extends RoomDatabase {
                 if(INSTANCE == null){
                     INSTANCE = Room.databaseBuilder(context,SelectionRoomDatabase.class,"SelectionDatabase")
                             .addCallback(sRoomDatabaseCallback)
+                            .allowMainThreadQueries()
                             .build();
                 }
             }

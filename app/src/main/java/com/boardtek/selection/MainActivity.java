@@ -12,10 +12,12 @@ import com.boardtek.appcenter.AppCenter;
 import com.boardtek.appcenter.NetworkInformation;
 import com.boardtek.selection.databinding.ActivityMainBinding;
 import com.boardtek.selection.databinding.AppBarMainBinding;
+import com.boardtek.selection.ui.loading.Loading;
 import com.boardtek.selection.worker.LoadData;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import androidx.annotation.NonNull;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -24,7 +26,11 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.ListenableWorker;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.Operation;
+import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
 
@@ -33,15 +39,23 @@ public class MainActivity extends AppCompatActivity {
     private AppBarConfiguration mAppBarConfiguration;
     private String TAG = MainActivity.class.getSimpleName();
     private ActivityMainBinding binding;
+    private MainViewModel mainViewModel;
+    private Loading loading;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //ViewModel
+        mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        //ViewBinding
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        //loadingView
+        loading = new Loading(this);
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
         // Passing each menu ID as a set of Ids because each
@@ -56,6 +70,20 @@ public class MainActivity extends AppCompatActivity {
         NetworkInformation.init(this);
         AppCenter.init(this);
         initHeader(navigationView);
+
+        mainViewModel.loadDataState.observe(this,workInfo -> {
+
+            Log.d(TAG,workInfo.getState().toString());
+
+            if(workInfo.getState()== WorkInfo.State.SUCCEEDED){
+                Loading.closeLoadingView();
+            }
+
+            if(workInfo.getState()== WorkInfo.State.RUNNING){
+                Loading.showLoadingView();
+            }
+        });
+
 
     }
 
@@ -78,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
         textView_WiFi.setText(NetworkInformation.getWifiRetek());
         textView_testState.setText(NetworkInformation.IP);
         //navigationView contentView
+
     }
 
     @Override
@@ -91,22 +120,13 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         Log.d(TAG, String.valueOf(item.getItemId()));
 
-        String url = "http://192.168.50.98/system_mvc/controller.php?s=dev,007459,500,laminationProgram,pp_program&action=mobile_programData_all";
-        Data inputData = new Data.Builder()
-                .putString("url",url)
-                .putBoolean("isTestMode",true)
-                .build();
-
-        OneTimeWorkRequest loadData = new OneTimeWorkRequest.Builder(LoadData.class)
-                .addTag("LoadData")
-                .setInputData(inputData)
-                .build();
-
-
         switch (item.getItemId()){
             case R.id.update_data:
                 //WorkManager.getInstance().enqueue(loadData);
-                WorkManager.getInstance(this).enqueue(loadData);
+                mainViewModel.workManager
+                        .beginUniqueWork("LoadAllData", ExistingWorkPolicy.REPLACE,mainViewModel.loadData)
+                        .enqueue();
+
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
