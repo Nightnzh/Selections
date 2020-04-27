@@ -1,6 +1,7 @@
 package com.boardtek.selection;
 
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -14,9 +15,11 @@ import com.boardtek.selection.databinding.ActivityMainBinding;
 import com.boardtek.selection.databinding.AppBarMainBinding;
 import com.boardtek.selection.ui.loading.Loading;
 import com.boardtek.selection.worker.LoadData;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -32,6 +35,9 @@ import androidx.work.OneTimeWorkRequest;
 import androidx.work.Operation;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -84,6 +90,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        binding.navView.getMenu().findItem(R.id.menu_item_actions).setOnMenuItemClickListener(this::onOptionsItemSelected);
+
 
     }
 
@@ -103,7 +111,8 @@ public class MainActivity extends AppCompatActivity {
         AppCenter.addTimerPerSecondListener(() -> {
             textView_NowTime.setText(getString(R.string.System_time) +"\n"+AppCenter.getSystemTime());
         });
-        textView_WiFi.setText(NetworkInformation.getWifiRetek());
+        if(NetworkInformation.isConnected(this))
+            textView_WiFi.setText(NetworkInformation.getWifiRetek());
         textView_testState.setText(NetworkInformation.IP);
         //navigationView contentView
 
@@ -123,10 +132,28 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()){
             case R.id.update_data:
                 //WorkManager.getInstance().enqueue(loadData);
-                mainViewModel.workManager
-                        .beginUniqueWork("LoadAllData", ExistingWorkPolicy.REPLACE,mainViewModel.loadData)
-                        .enqueue();
+                if (NetworkInformation.isConnected(this))
+                    mainViewModel.workManager
+                            .beginUniqueWork("LoadAllData", ExistingWorkPolicy.REPLACE, mainViewModel.loadData)
+                            .enqueue();
+                else
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle("Error")
+                            .setIcon(R.drawable.ic_wifi)
+                            .setMessage("Network is not connection.\nPlease open the WIFI.")
+                            .setPositiveButton("OK", null)
+                            .show();
+                return true;
+            case R.id.menu_item_actions:
+                CharSequence [] actions = new CharSequence[]{"A","B"};
+                boolean[] bs = {false,false};
+                List<Boolean> listBoolean = Arrays.asList(false,false);
+                AlertDialog dialogBuilder = new MaterialAlertDialogBuilder(this)
+                        .setTitle("Actions")
+                        .setIcon(R.drawable.ic_view)
+                        .setMultiChoiceItems(actions,bs,(dialog, which, isChecked) -> {
 
+                        }).show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -139,6 +166,5 @@ public class MainActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
     }
-
 
 }

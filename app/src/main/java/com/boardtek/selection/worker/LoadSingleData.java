@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
@@ -34,12 +35,9 @@ public class LoadSingleData extends Worker {
     }
 
 
-
     @NonNull
     @Override
     public Result doWork() {
-
-
         String url = getInputData().getString("url");
         String programId = getInputData().getString("programId");
         Boolean isTestMode = getInputData().getBoolean("isTestMode",false);
@@ -53,18 +51,20 @@ public class LoadSingleData extends Worker {
                 .url(url)
                 .post(formBody)
                 .build();
-
-
         try {
             Response response = okHttpClient.newCall(request).execute();
-            Log.d(TAG,response.body().string());
             String json = response.body().string();
-            SelectionProgramItem item = new Gson().fromJson(json,SelectionProgramItem.class);
-            if(isTestMode)
-                selectionDao.insertItem(getSelection_(item));
-            else
-                selectionDao.insertItem(getSelection_(item));
-            return Result.success();
+            Log.d(TAG,json);
+            if(!json.equals("nonExist")) {
+                SelectionProgramItem item = new Gson().fromJson(json, SelectionProgramItem.class);
+                if (isTestMode)
+                    selectionDao.insertItem(getSelection_(item));
+                else selectionDao.insertItem(getSelection(item));
+            } else {
+                return Result.failure();
+            }
+            Data out = new  Data.Builder().putString("programId",programId).build();
+            return Result.success(out);
         } catch (IOException e) {
             e.printStackTrace();
             return Result.failure();
