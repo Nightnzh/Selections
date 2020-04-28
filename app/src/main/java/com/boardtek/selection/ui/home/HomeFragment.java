@@ -16,39 +16,26 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.Data;
 import androidx.work.ExistingWorkPolicy;
-import androidx.work.ListenableWorker;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.Operation;
-import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
-
 import com.boardtek.selection.R;
-import com.boardtek.selection.adapter.DataContentAdapter;
+import com.boardtek.selection.adapter.datacontent.DataContentAdapter;
 import com.boardtek.selection.databinding.EnterNumBinding;
 import com.boardtek.selection.databinding.FragmentHomeBinding;
 import com.boardtek.selection.databinding.RecyclerLayoutBinding;
 import com.boardtek.selection.datamodel.DataContent;
 import com.boardtek.selection.datamodel.Selection;
-import com.boardtek.selection.db.SelectionDao;
 import com.boardtek.selection.db.SelectionRoomDatabase;
 import com.boardtek.selection.net.NetInfo;
 import com.boardtek.selection.ui.loading.Loading;
-import com.boardtek.selection.worker.LoadSingleData;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
 import org.jetbrains.annotations.NotNull;
-
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class HomeFragment extends Fragment implements View.OnClickListener {
 
@@ -180,7 +167,17 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         }
     }
 
-//    public interface Cb {
+    @Override
+    public void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+    }
+
+    //    public interface Cb {
 //        void call(LiveData<WorkInfo> liveData_workInfo);
 //    }
 }

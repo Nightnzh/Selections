@@ -1,21 +1,13 @@
-package com.boardtek.selection.adapter;
+package com.boardtek.selection.adapter.datacontent;
 
-import android.text.Layout;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.boardtek.selection.R;
 import com.boardtek.selection.datamodel.DataContent;
-import com.boardtek.selection.datamodel.Selection;
-
-import org.w3c.dom.Text;
-
 import java.util.List;
 
 public class DataContentAdapter extends RecyclerView.Adapter<DataViewHolder> {

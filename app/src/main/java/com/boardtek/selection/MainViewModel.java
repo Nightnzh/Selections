@@ -5,12 +5,16 @@ import android.app.Application;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
+import com.boardtek.selection.datamodel.Action;
 import com.boardtek.selection.worker.LoadData;
+
+import java.util.List;
 
 public class MainViewModel extends AndroidViewModel {
 
@@ -19,6 +23,7 @@ public class MainViewModel extends AndroidViewModel {
     OneTimeWorkRequest loadData = new OneTimeWorkRequest.Builder(LoadData.class).setInputData(inputData).build();
     WorkManager workManager = WorkManager.getInstance(getApplication());
     LiveData<WorkInfo> loadDataState =  workManager.getWorkInfoByIdLiveData(loadData.getId());
+    public MutableLiveData<List<MutableLiveData<Action>>> actionListLiveData = new MutableLiveData<>();
 
     public MainViewModel(@NonNull Application application) {
         super(application);

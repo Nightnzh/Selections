@@ -55,9 +55,7 @@ public class LoadData extends Worker {
         Request request = new Request.Builder()
                 .url(url)
                 .build();
-
         try {
-
             Response response = okHttpClient.newCall(request).execute();
             String json = response.body().string();
             Log.d(TAG,"JSON:"+json);

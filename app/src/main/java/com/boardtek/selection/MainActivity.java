@@ -1,25 +1,25 @@
 package com.boardtek.selection;
 
 import android.annotation.SuppressLint;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
+import android.widget.CompoundButton;
 import android.widget.TextView;
-import android.widget.Toast;
 import com.boardtek.appcenter.AppCenter;
 import com.boardtek.appcenter.NetworkInformation;
+import com.boardtek.selection.datamodel.Action;
+import com.boardtek.selection.adapter.actionAdapter.ActionAdapter;
+import com.boardtek.selection.databinding.ActionLayoutBinding;
 import com.boardtek.selection.databinding.ActivityMainBinding;
-import com.boardtek.selection.databinding.AppBarMainBinding;
 import com.boardtek.selection.ui.loading.Loading;
-import com.boardtek.selection.worker.LoadData;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -28,16 +28,19 @@ import androidx.navigation.ui.NavigationUI;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.work.Data;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.work.ExistingWorkPolicy;
-import androidx.work.ListenableWorker;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.Operation;
 import androidx.work.WorkInfo;
-import androidx.work.WorkManager;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -47,6 +50,10 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private MainViewModel mainViewModel;
     private Loading loading;
+    private List<Action> actionList = new ArrayList<>();
+    private ActionLayoutBinding actionLayoutBinding;
+    private ActionAdapter actionAdapter;
+    private AlertDialog actionDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +99,34 @@ public class MainActivity extends AppCompatActivity {
 
         binding.navView.getMenu().findItem(R.id.menu_item_actions).setOnMenuItemClickListener(this::onOptionsItemSelected);
 
+
+        // Action
+        actionLayoutBinding = ActionLayoutBinding.inflate(getLayoutInflater());
+
+        actionLayoutBinding.checkSelectAll.setOnCheckedChangeListener(this::onCheckedChanged);
+
+        actionDialog = new MaterialAlertDialogBuilder(this)
+                .setView(actionLayoutBinding.getRoot())
+                .setIcon(R.drawable.ic_view)
+                .setPositiveButton("OK",(dialog, which) -> {
+                })
+                .create();
+
+        mainViewModel.actionListLiveData.observe(this,actions -> {
+            if(actions==null)
+                return;
+
+            Log.d("@@@@@",actions.toString());
+            for (MutableLiveData<Action> mutableLiveDataaction : actions){
+
+//                if(!action.getChecked()) {
+//                    actionLayoutBinding.checkSelectAll.setChecked(false);
+//                    return;
+//                }else {
+//                    actionLayoutBinding.checkSelectAll.setChecked(true);
+//                }
+            }
+        });
 
     }
 
@@ -145,20 +180,40 @@ public class MainActivity extends AppCompatActivity {
                             .show();
                 return true;
             case R.id.menu_item_actions:
-                CharSequence [] actions = new CharSequence[]{"A","B"};
-                boolean[] bs = {false,false};
-                List<Boolean> listBoolean = Arrays.asList(false,false);
-                AlertDialog dialogBuilder = new MaterialAlertDialogBuilder(this)
-                        .setTitle("Actions")
-                        .setIcon(R.drawable.ic_view)
-                        .setMultiChoiceItems(actions,bs,(dialog, which, isChecked) -> {
 
-                        }).show();
+                boolean isTestMode = false;
+                actionList.clear();
+                Map<String,String> posts = new HashMap<String, String>();
+                if(!isTestMode) {
+                    posts.put("program",this.getSharedPreferences("Setting",MODE_PRIVATE).getString("TEMP_ID","0"));
+                    assert false;
+                    actionList.add(new Action("GetAll", "http://192.168.50.98/system_mvc/controller.php?s=dev,007459,500,laminationProgram,pp_program&action=mobile_programData_all"));
+                    actionList.add(new Action("FromProgramId","http://192.168.50.98/system_mvc/controller.php?s=dev,007459,500,laminationProgram,pp_program&action=mobile_programData",posts));
+                } else {
+
+                }
+                actionAdapter = new ActionAdapter(actionList);
+                actionAdapter.setOnAllSelectedEvent(isAllSelected -> {
+                    actionLayoutBinding.checkSelectAll.setOnCheckedChangeListener(null);
+                    actionLayoutBinding.checkSelectAll.setChecked(isAllSelected);
+                    actionLayoutBinding.checkSelectAll.setOnCheckedChangeListener(this::onCheckedChanged);
+                });
+                RecyclerView recycler = actionLayoutBinding.recyclerAction;
+                recycler.setHasFixedSize(true);
+                recycler.setLayoutManager(new LinearLayoutManager(this));
+                recycler.setAdapter(actionAdapter);
+//                mainViewModel.getActionListLiveData().postValue(actionList);
+
+                actionLayoutBinding.checkSelectAll.setChecked(false);
+                actionDialog.show();
+
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
+
+
 
     @Override
     public boolean onSupportNavigateUp() {
@@ -167,4 +222,11 @@ public class MainActivity extends AppCompatActivity {
                 || super.onSupportNavigateUp();
     }
 
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        if(isChecked) {
+            actionAdapter.checkAll();
+        } else {
+            actionAdapter.cancelCheckAll();
+        }
+    }
 }
