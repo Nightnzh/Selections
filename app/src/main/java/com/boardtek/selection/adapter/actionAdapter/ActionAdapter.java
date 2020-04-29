@@ -53,8 +53,8 @@ public class ActionAdapter extends RecyclerView.Adapter<ActionAdapter.ActionView
             }else {
                 list.get(position).setChecked(false);
             }
-                if (onAllSelectedEvent != null)
-                    onAllSelectedEvent.call(Stream.of(list).allMatch(Action::getChecked) );
+            if (onAllSelectedEvent != null)
+                onAllSelectedEvent.call(Stream.of(list).allMatch(Action::getChecked) );
 
         });
     }

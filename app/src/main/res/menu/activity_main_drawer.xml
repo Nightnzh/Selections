@@ -12,7 +12,7 @@
     </group>
 
     <item android:title="@string/Controller"
-        android:id="@+id/menu_controller">
+        android:id="@+id/controller">
         <menu>
             <item android:title="@string/language"
                 android:icon="@drawable/ic_language"

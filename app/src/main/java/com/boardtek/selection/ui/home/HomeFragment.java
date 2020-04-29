@@ -1,17 +1,14 @@
 package com.boardtek.selection.ui.home;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,7 +27,7 @@ import com.boardtek.selection.datamodel.DataContent;
 import com.boardtek.selection.datamodel.Selection;
 import com.boardtek.selection.db.SelectionRoomDatabase;
 import com.boardtek.selection.net.NetInfo;
-import com.boardtek.selection.ui.loading.Loading;
+import com.boardtek.selection.ui.v.Loading;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -44,6 +41,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     private FragmentHomeBinding fragmentHomeBinding;
     private Loading loading;
     private NetInfo netInfo;
+    private EnterNumBinding enterNumBinding;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -102,13 +100,6 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         return root;
     }
 
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-
-    }
-
-
 
     @SuppressLint("SetTextI18n")
     private void setSelection(@NotNull Selection selection) {
@@ -120,6 +111,8 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         fragmentHomeBinding.tContentMinute.setText(getString(R.string.minute) + selection.getMinute());
         fragmentHomeBinding.tContentSetName.setText(getString(R.string.set_name) + selection.getSetName());
         fragmentHomeBinding.tContentSetDate.setText(getString(R.string.set_date) + "\n" + selection.getSetDate().substring(0, 9) + "\n" + selection.getSetDate().substring(11));
+        fragmentHomeBinding.tContentIsAutoVersion.setText(getString(R.string.isautoversion)+selection.isAutoAddVersion());
+        fragmentHomeBinding.tContentRemark.setText(getString(R.string.remark)+selection.getRemark());
         fragmentHomeBinding.bContentDataPp.setOnClickListener(this);
         fragmentHomeBinding.bContentDataContent.setOnClickListener(this);
     }
@@ -127,10 +120,11 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onClick(@NotNull View v) {
         Log.d(TAG, getResources().getResourceName(v.getId()));
-        if (v.getId() == R.id.fab) {
-            EnterNumBinding enterNumBinding = EnterNumBinding.inflate(getLayoutInflater());
-            EditText editText = enterNumBinding.editText;
 
+        if (v.getId() == R.id.fab) {
+            enterNumBinding = EnterNumBinding.inflate(getLayoutInflater());
+            EditText editText;
+            editText = enterNumBinding.editText;
             new MaterialAlertDialogBuilder(this.requireContext())
                     .setIcon(R.drawable.ic_data)
                     .setTitle("ID")
@@ -165,7 +159,15 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
                     .setView(view)
                     .show();
         }
+
+        if(v.getId() == R.id.b_content_data_pp){
+            String json = homeViewModel.getSelectionMutableLiveData().getValue().getData_pp();
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setMessage(json)
+                    .show();
+        }
     }
+
 
     @Override
     public void onStop() {

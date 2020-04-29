@@ -1,5 +1,4 @@
 package com.boardtek.selection;
-
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.util.Log;
@@ -7,19 +6,29 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.TextView;
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.boardtek.appcenter.AppCenter;
 import com.boardtek.appcenter.NetworkInformation;
+import com.boardtek.selection.databinding.SwitchTestBinding;
 import com.boardtek.selection.datamodel.Action;
 import com.boardtek.selection.adapter.actionAdapter.ActionAdapter;
 import com.boardtek.selection.databinding.ActionLayoutBinding;
 import com.boardtek.selection.databinding.ActivityMainBinding;
-import com.boardtek.selection.ui.loading.Loading;
+import com.boardtek.selection.ui.v.Loading;
+import com.boardtek.selection.ui.v.ShowActionResponse;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.switchmaterial.SwitchMaterial;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
-import androidx.lifecycle.MutableLiveData;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -38,22 +47,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-
-
 public class MainActivity extends AppCompatActivity {
 
-    private AppBarConfiguration mAppBarConfiguration;
     private String TAG = MainActivity.class.getSimpleName();
-    private ActivityMainBinding binding;
+    private AppBarConfiguration mAppBarConfiguration;
+    private ActivityMainBinding activityMainBinding;
     private MainViewModel mainViewModel;
     private Loading loading;
     private List<Action> actionList = new ArrayList<>();
     private ActionLayoutBinding actionLayoutBinding;
     private ActionAdapter actionAdapter;
     private AlertDialog actionDialog;
+    private RequestQueue volleyQueue;
+    private SwitchCompat switchTest;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,8 +68,11 @@ public class MainActivity extends AppCompatActivity {
         //ViewModel
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
         //ViewBinding
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        activityMainBinding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(activityMainBinding.getRoot());
+
+        //Setting
+        getSharedPreferences("Setting",MODE_PRIVATE).edit().putBoolean("TEST_MODE",false);
 
         //loadingView
         loading = new Loading(this);
@@ -97,37 +107,30 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        binding.navView.getMenu().findItem(R.id.menu_item_actions).setOnMenuItemClickListener(this::onOptionsItemSelected);
-
+        activityMainBinding.navView.getMenu().findItem(R.id.menu_item_actions).setOnMenuItemClickListener(this::onOptionsItemSelected);
+        activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).setOnMenuItemClickListener(this::onOptionsItemSelected);
+        switchTest = (SwitchMaterial) activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).getActionView();
+        switchTest.setOnCheckedChangeListener(this::onCheckedChanged);
 
         // Action
         actionLayoutBinding = ActionLayoutBinding.inflate(getLayoutInflater());
 
         actionLayoutBinding.checkSelectAll.setOnCheckedChangeListener(this::onCheckedChanged);
 
+        //init Volley
+        volleyQueue = Volley.newRequestQueue(this);
+
         actionDialog = new MaterialAlertDialogBuilder(this)
                 .setView(actionLayoutBinding.getRoot())
                 .setIcon(R.drawable.ic_view)
                 .setPositiveButton("OK",(dialog, which) -> {
+                    for(Action action : actionList){
+                        if(action.getChecked()){
+                            createAndStartActionRequest(action);
+                        }
+                    }
                 })
                 .create();
-
-        mainViewModel.actionListLiveData.observe(this,actions -> {
-            if(actions==null)
-                return;
-
-            Log.d("@@@@@",actions.toString());
-            for (MutableLiveData<Action> mutableLiveDataaction : actions){
-
-//                if(!action.getChecked()) {
-//                    actionLayoutBinding.checkSelectAll.setChecked(false);
-//                    return;
-//                }else {
-//                    actionLayoutBinding.checkSelectAll.setChecked(true);
-//                }
-            }
-        });
-
     }
 
     @SuppressLint("SetTextI18n")
@@ -153,6 +156,33 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void createAndStartActionRequest(Action action){
+        StringRequest getActionRequest;
+        if(action.getPosts()==null) {
+            getActionRequest = new StringRequest(action.getUrl(),response -> {
+                Log.d(TAG,response);
+                ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),response);
+            },error -> {
+                Log.d(TAG,error.toString());
+                ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),error.toString());
+            });
+        } else {
+            getActionRequest = new StringRequest(Request.Method.POST,action.getUrl(),response -> {
+                Log.d(TAG,response);
+                ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),response);
+            },error -> {
+                Log.d(TAG,error.toString());
+                ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),error.toString());
+            }){
+                @Override
+                protected Map<String, String> getParams() throws AuthFailureError {
+                    return action.getPosts();
+                }
+            };
+        }
+        volleyQueue.add(getActionRequest);
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -162,8 +192,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        Log.d(TAG, String.valueOf(item.getItemId()));
-
+        Log.d(TAG, getResources().getResourceName(item.getItemId()));
         switch (item.getItemId()){
             case R.id.update_data:
                 //WorkManager.getInstance().enqueue(loadData);
@@ -185,13 +214,14 @@ public class MainActivity extends AppCompatActivity {
                 actionList.clear();
                 Map<String,String> posts = new HashMap<String, String>();
                 if(!isTestMode) {
-                    posts.put("program",this.getSharedPreferences("Setting",MODE_PRIVATE).getString("TEMP_ID","0"));
+                    posts.put("programId",this.getSharedPreferences("Setting",MODE_PRIVATE).getString("TEMP_ID","0"));
                     assert false;
                     actionList.add(new Action("GetAll", "http://192.168.50.98/system_mvc/controller.php?s=dev,007459,500,laminationProgram,pp_program&action=mobile_programData_all"));
                     actionList.add(new Action("FromProgramId","http://192.168.50.98/system_mvc/controller.php?s=dev,007459,500,laminationProgram,pp_program&action=mobile_programData",posts));
                 } else {
 
                 }
+                Log.d(TAG,posts.toString());
                 actionAdapter = new ActionAdapter(actionList);
                 actionAdapter.setOnAllSelectedEvent(isAllSelected -> {
                     actionLayoutBinding.checkSelectAll.setOnCheckedChangeListener(null);
@@ -206,14 +236,14 @@ public class MainActivity extends AppCompatActivity {
 
                 actionLayoutBinding.checkSelectAll.setChecked(false);
                 actionDialog.show();
-
+                return true;
+            case R.id.menu_item_test_mode:
+                switchTest.setChecked(!switchTest.isChecked());
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
-
-
 
     @Override
     public boolean onSupportNavigateUp() {
@@ -223,10 +253,44 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        if(isChecked) {
-            actionAdapter.checkAll();
-        } else {
-            actionAdapter.cancelCheckAll();
+
+        Log.d(TAG,getResources().getResourceName(buttonView.getId()));
+        if(buttonView.getId() == R.id.check_select_all) {
+            if (isChecked) {
+                actionAdapter.checkAll();
+            } else {
+                actionAdapter.cancelCheckAll();
+            }
+        } else if(buttonView.getId() == R.id.switch_test){
+            if(switchTest.isChecked()){
+                // TODO:正式區
+                getSharedPreferences("Setting",MODE_PRIVATE).edit().putInt("MODE",MODE_OFFCAIL).apply();
+            } else {
+                // TODO:測試區
+                getSharedPreferences("Setting",MODE_PRIVATE).edit().putInt("MODE",MODE_TEST).apply();
+                
+
+            }
         }
     }
+
+    private static final int MODE_TEST = 1;
+    private static final int MODE_OFFCAIL = 0;
 }
+
+
+//        mainViewModel.actionListLiveData.observe(this,actions -> {
+//            if(actions==null)
+//                return;
+//
+//            Log.d("@@@@@",actions.toString());
+//            for (Action action : actions){
+//
+//                if(!action.getChecked()) {
+//                    actionLayoutBinding.checkSelectAll.setChecked(false);
+//                    return;
+//                }else {
+//                    actionLayoutBinding.checkSelectAll.setChecked(true);
+//                }
+//            }
+//        });

@@ -1,4 +1,4 @@
-package com.boardtek.selection.ui.loading;
+package com.boardtek.selection.ui.v;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -11,7 +11,6 @@ import com.boardtek.selection.databinding.LoadingLayoutBinding;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class Loading {
-
     private static AlertDialog loadingDialog;
     private LoadingLayoutBinding binding;
     private static String tittle = "...";
