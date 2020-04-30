@@ -31,4 +31,6 @@
     <string name="select_all">Select All</string>
     <string name="isautoversion">IsAutoVersion:</string>
     <string name="remark">ReMark:</string>
+    <string name="official">OFFICIAL</string>
+    <string name="test">TEST</string>
 </resources>

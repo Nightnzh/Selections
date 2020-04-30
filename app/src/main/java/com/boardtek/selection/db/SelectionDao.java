@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
 import com.boardtek.selection.datamodel.Selection;
+import com.boardtek.selection.datamodel.SelectionTest;
 
 @Dao
 public interface SelectionDao {
@@ -19,6 +20,13 @@ public interface SelectionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertItem(Selection selection);
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertTestItem(SelectionTest selectiontest);
+
     @Query("delete from selection")
     void deleteAll();
+
+    @Query("select * from selectionTest where :id = programId limit 1")
+    Selection getSelectionTest(int id);
+
 }

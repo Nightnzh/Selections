@@ -9,8 +9,10 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.boardtek.appcenter.AppCenter;
+import com.boardtek.selection.Constant;
 import com.boardtek.selection.datamodel.Selection;
 import com.boardtek.selection.datamodel.SelectionProgramItem;
+import com.boardtek.selection.datamodel.SelectionTest;
 import com.boardtek.selection.db.SelectionDao;
 import com.boardtek.selection.db.SelectionRoomDatabase;
 import com.google.gson.Gson;
@@ -40,7 +42,7 @@ public class LoadSingleData extends Worker {
     public Result doWork() {
         String url = getInputData().getString("url");
         String programId = getInputData().getString("programId");
-        Boolean isTestMode = getInputData().getBoolean("isTestMode",false);
+        int mode = getInputData().getInt("mode",2);
         Log.d(TAG,url+"programId="+programId);
         OkHttpClient okHttpClient = new OkHttpClient();
         FormBody formBody = new FormBody.Builder()
@@ -57,9 +59,10 @@ public class LoadSingleData extends Worker {
             Log.d(TAG,json);
             if(!json.equals("nonExist")) {
                 SelectionProgramItem item = new Gson().fromJson(json, SelectionProgramItem.class);
-                if (isTestMode)
-                    selectionDao.insertItem(getSelection_(item));
-                else selectionDao.insertItem(getSelection(item));
+                if (mode == Constant.MODE_OFFICIAL)
+                    selectionDao.insertItem(getSelection(item));
+                else if(mode == Constant.MODE_TEST)
+                    selectionDao.insertTestItem(getSelectionTest(item));
             } else {
                 return Result.failure();
             }
@@ -91,9 +94,9 @@ public class LoadSingleData extends Worker {
 
     //TestMode
     @NotNull
-    private Selection getSelection_(SelectionProgramItem selectionProgramItem) {
-        return new Selection(
-                selectionProgramItem.getProgramId()+"_",
+    private SelectionTest getSelectionTest(SelectionProgramItem selectionProgramItem) {
+        return new SelectionTest(
+                selectionProgramItem.getProgramId(),
                 selectionProgramItem.getHour(),
                 selectionProgramItem.isAutoAddVersion(),
                 selectionProgramItem.isPause(),

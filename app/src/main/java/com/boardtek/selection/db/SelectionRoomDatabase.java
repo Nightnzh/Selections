@@ -7,14 +7,16 @@ import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.boardtek.selection.datamodel.Selection;
+import com.boardtek.selection.datamodel.SelectionTest;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Database(entities = {Selection.class} , version = 1,exportSchema = false)
+@Database(entities = {Selection.class, SelectionTest.class} , version = 2,exportSchema = false)
 public abstract class SelectionRoomDatabase extends RoomDatabase {
 
     //Dao

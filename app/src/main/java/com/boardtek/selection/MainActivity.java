@@ -1,12 +1,15 @@
 package com.boardtek.selection;
 import android.annotation.SuppressLint;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 import android.widget.CompoundButton;
-import android.widget.Switch;
 import android.widget.TextView;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -15,13 +18,15 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.boardtek.appcenter.AppCenter;
 import com.boardtek.appcenter.NetworkInformation;
-import com.boardtek.selection.databinding.SwitchTestBinding;
+import com.boardtek.selection.databinding.NavHeaderMainBinding;
 import com.boardtek.selection.datamodel.Action;
 import com.boardtek.selection.adapter.actionAdapter.ActionAdapter;
 import com.boardtek.selection.databinding.ActionLayoutBinding;
 import com.boardtek.selection.databinding.ActivityMainBinding;
+import com.boardtek.selection.net.WifiReceiver;
 import com.boardtek.selection.ui.v.Loading;
 import com.boardtek.selection.ui.v.ShowActionResponse;
+import com.boardtek.selection.worker.LoadAllData;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.switchmaterial.SwitchMaterial;
@@ -39,7 +44,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Data;
 import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 
 import java.util.ArrayList;
@@ -52,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private String TAG = MainActivity.class.getSimpleName();
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding activityMainBinding;
+    private NavHeaderMainBinding navHeaderMainBinding;
     private MainViewModel mainViewModel;
     private Loading loading;
     private List<Action> actionList = new ArrayList<>();
@@ -60,6 +68,10 @@ public class MainActivity extends AppCompatActivity {
     private AlertDialog actionDialog;
     private RequestQueue volleyQueue;
     private SwitchCompat switchTest;
+    public static int mode;
+
+    //WIFI
+    private WifiReceiver wifiReceiver;
 
 
     @Override
@@ -68,11 +80,17 @@ public class MainActivity extends AppCompatActivity {
         //ViewModel
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
         //ViewBinding
+
         activityMainBinding = ActivityMainBinding.inflate(getLayoutInflater());
+        navHeaderMainBinding = NavHeaderMainBinding.bind(activityMainBinding.navView.getHeaderView(0));
         setContentView(activityMainBinding.getRoot());
 
-        //Setting
-        getSharedPreferences("Setting",MODE_PRIVATE).edit().putBoolean("TEST_MODE",false);
+        // Setting
+        mode = getSharedPreferences("Setting",MODE_PRIVATE).getInt("MODE",Constant.MODE_OFFICIAL);
+        activityMainBinding.navView.getMenu().findItem(R.id.menu_item_actions).setOnMenuItemClickListener(this::onOptionsItemSelected);
+        activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).setOnMenuItemClickListener(this::onOptionsItemSelected);
+        switchTest = (SwitchMaterial) activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).getActionView();
+        switchTest.setOnCheckedChangeListener(this::onCheckedChanged);
 
         //loadingView
         loading = new Loading(this);
@@ -94,23 +112,19 @@ public class MainActivity extends AppCompatActivity {
         AppCenter.init(this);
         initHeader(navigationView);
 
-        mainViewModel.loadDataState.observe(this,workInfo -> {
-
+        mainViewModel.loadAllDataState.observe(this,workInfos -> {
+            if(workInfos.size() == 0) return;
+            WorkInfo workInfo = workInfos.get(0);
             Log.d(TAG,workInfo.getState().toString());
-
             if(workInfo.getState()== WorkInfo.State.SUCCEEDED){
                 Loading.closeLoadingView();
-            }
-
-            if(workInfo.getState()== WorkInfo.State.RUNNING){
+            } else if(workInfo.getState()== WorkInfo.State.RUNNING){
                 Loading.showLoadingView();
+            } else if(workInfo.getState()== WorkInfo.State.FAILED){
+                Loading.closeLoadingView();
             }
         });
 
-        activityMainBinding.navView.getMenu().findItem(R.id.menu_item_actions).setOnMenuItemClickListener(this::onOptionsItemSelected);
-        activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).setOnMenuItemClickListener(this::onOptionsItemSelected);
-        switchTest = (SwitchMaterial) activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).getActionView();
-        switchTest.setOnCheckedChangeListener(this::onCheckedChanged);
 
         // Action
         actionLayoutBinding = ActionLayoutBinding.inflate(getLayoutInflater());
@@ -141,8 +155,8 @@ public class MainActivity extends AppCompatActivity {
         TextView textView_user = headerView.findViewById(R.id.t_header_user);
         TextView textView_mobile = headerView.findViewById(R.id.t_mobileNum);
         TextView textView_NowTime = headerView.findViewById(R.id.t_header_time);
-        TextView textView_WiFi = headerView.findViewById(R.id.t_header_wifi_name);
-        TextView textView_testState = headerView.findViewById(R.id.t_headre_mode);
+        TextView textView_wifi = headerView.findViewById(R.id.t_header_wifi_name);
+        TextView textView_mode = headerView.findViewById(R.id.t_headre_mode);
 //        textView_appName.setText("壓機程式自動選用");
         textView_user.setText(AppCenter.uName + ":" + AppCenter.uId);
         textView_mobile.setText("Mobile: "+ AppCenter.mobileSn);
@@ -150,8 +164,16 @@ public class MainActivity extends AppCompatActivity {
             textView_NowTime.setText(getString(R.string.System_time) +"\n"+AppCenter.getSystemTime());
         });
         if(NetworkInformation.isConnected(this))
-            textView_WiFi.setText(NetworkInformation.getWifiRetek());
-        textView_testState.setText(NetworkInformation.IP);
+            textView_wifi.setText(NetworkInformation.getWifiRetek());
+        if(mode == Constant.MODE_OFFICIAL) {
+            textView_mode.setText(R.string.official);
+            switchTest.setChecked(false);
+        }
+        else if(mode == Constant.MODE_TEST) {
+            textView_mode.setText(R.string.test);
+            switchTest.setChecked(true);
+        }
+
         //navigationView contentView
 
     }
@@ -195,32 +217,34 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, getResources().getResourceName(item.getItemId()));
         switch (item.getItemId()){
             case R.id.update_data:
-                //WorkManager.getInstance().enqueue(loadData);
-                if (NetworkInformation.isConnected(this))
+                Data in;
+                if (NetworkInformation.isConnected(this)) {
+                    in = new Data.Builder()
+                            .putString("url",Constant.getUrl(mode,Constant.ACTION_GET_ALL))
+                            .putInt("mode",mode)
+                            .build();
+                    OneTimeWorkRequest loadAllData = new OneTimeWorkRequest.Builder(LoadAllData.class)
+                            .setInputData(in)
+                            .build();
+
                     mainViewModel.workManager
-                            .beginUniqueWork("LoadAllData", ExistingWorkPolicy.REPLACE, mainViewModel.loadData)
+                            .beginUniqueWork("LoadAllData", ExistingWorkPolicy.REPLACE, loadAllData)
                             .enqueue();
+                }
                 else
                     new MaterialAlertDialogBuilder(this)
                             .setTitle("Error")
                             .setIcon(R.drawable.ic_wifi)
-                            .setMessage("Network is not connection.\nPlease open the WIFI.")
+                            .setMessage("Network is not connected.\nPlease open the WIFI.")
                             .setPositiveButton("OK", null)
                             .show();
                 return true;
             case R.id.menu_item_actions:
-
-                boolean isTestMode = false;
                 actionList.clear();
                 Map<String,String> posts = new HashMap<String, String>();
-                if(!isTestMode) {
-                    posts.put("programId",this.getSharedPreferences("Setting",MODE_PRIVATE).getString("TEMP_ID","0"));
-                    assert false;
-                    actionList.add(new Action("GetAll", "http://192.168.50.98/system_mvc/controller.php?s=dev,007459,500,laminationProgram,pp_program&action=mobile_programData_all"));
-                    actionList.add(new Action("FromProgramId","http://192.168.50.98/system_mvc/controller.php?s=dev,007459,500,laminationProgram,pp_program&action=mobile_programData",posts));
-                } else {
-
-                }
+                posts.put("programId",this.getSharedPreferences("Setting",MODE_PRIVATE).getString("TEMP_ID","0"));
+                actionList.add(new Action(Constant.ACTION_GET_ALL, Constant.getUrl(mode,Constant.ACTION_GET_ALL)));
+                actionList.add(new Action(Constant.ACTION_BY_PROGRAM_ID,Constant.getUrl(mode,Constant.ACTION_BY_PROGRAM_ID),posts));
                 Log.d(TAG,posts.toString());
                 actionAdapter = new ActionAdapter(actionList);
                 actionAdapter.setOnAllSelectedEvent(isAllSelected -> {
@@ -263,19 +287,50 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if(buttonView.getId() == R.id.switch_test){
             if(switchTest.isChecked()){
-                // TODO:正式區
-                getSharedPreferences("Setting",MODE_PRIVATE).edit().putInt("MODE",MODE_OFFCAIL).apply();
+                getSharedPreferences("Setting",MODE_PRIVATE).edit().putInt("MODE",Constant.MODE_TEST).apply();
+                mode = Constant.MODE_TEST;
+                navHeaderMainBinding.tHeadreMode.setText(R.string.test);
             } else {
-                // TODO:測試區
-                getSharedPreferences("Setting",MODE_PRIVATE).edit().putInt("MODE",MODE_TEST).apply();
-                
-
+                getSharedPreferences("Setting",MODE_PRIVATE).edit().putInt("MODE",Constant.MODE_OFFICIAL).apply();
+                mode = Constant.MODE_OFFICIAL;
+                navHeaderMainBinding.tHeadreMode.setText(R.string.official);
             }
         }
     }
 
-    private static final int MODE_TEST = 1;
-    private static final int MODE_OFFCAIL = 0;
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //註冊Wifi接收廣播
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+        filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        wifiReceiver = new WifiReceiver();
+        wifiReceiver.setOnNetworkChangeListener(this::OnNetworkChange);
+        registerReceiver(wifiReceiver, filter);
+
+    }
+
+    @SuppressLint("SetTextI18n")
+    public void OnNetworkChange(Boolean isConnected, WifiInfo wifiInfo) {
+        if (isConnected) {
+            NetworkInformation.init(this);
+            String ssid = wifiInfo == null ? "" : wifiInfo.getSSID();
+            navHeaderMainBinding.tHeaderWifiName.setText(ssid);
+        } else {
+            NetworkInformation.clear();
+            navHeaderMainBinding.tHeaderWifiName.setText("null");
+        }
+    }
+
+    //暫停, 註銷廣播
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (wifiReceiver!=null) unregisterReceiver(wifiReceiver);
+    }
+
 }
 
 

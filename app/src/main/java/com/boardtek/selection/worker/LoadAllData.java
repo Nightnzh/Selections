@@ -3,17 +3,17 @@ package com.boardtek.selection.worker;
 import android.content.Context;
 import android.os.Build;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 import com.boardtek.appcenter.AppCenter;
+import com.boardtek.selection.Constant;
 import com.boardtek.selection.datamodel.Selection;
 import com.boardtek.selection.datamodel.SelectionProgram;
 import com.boardtek.selection.datamodel.SelectionProgramItem;
+import com.boardtek.selection.datamodel.SelectionTest;
 import com.boardtek.selection.db.SelectionDao;
 import com.boardtek.selection.db.SelectionRoomDatabase;
 import com.google.gson.Gson;
@@ -30,14 +30,14 @@ import okhttp3.Response;
 /*
     1.透過Url讀取全部資料
     2.存進本地端資料庫
-    **測試模式的資料屬性 ProgramID(PrimeyKey) 在後面加上"_"以區分正式與正式的資料!
+
 */
 
-public class LoadData extends Worker {
-    private String TAG = LoadData.class.getSimpleName();
+public class LoadAllData extends Worker {
+    private String TAG = LoadAllData.class.getSimpleName();
     private SelectionDao selectionDao;
 
-    public LoadData(@NonNull Context context, @NonNull WorkerParameters workerParams) {
+    public LoadAllData(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
         selectionDao = SelectionRoomDatabase.getDatabase(context).selectionDao();
     }
@@ -47,7 +47,7 @@ public class LoadData extends Worker {
     @Override
     public Result doWork() {
         String url = getInputData().getString("url");
-        Boolean isTestMode = getInputData().getBoolean("isTestMode",false);
+        int mode = getInputData().getInt("mode", Constant.MODE_OFFICIAL);
         Log.d(TAG,"URL:"+url);
 
         OkHttpClient okHttpClient = new OkHttpClient();
@@ -62,10 +62,10 @@ public class LoadData extends Worker {
             SelectionProgram selectionProgram = new Gson().fromJson(json,SelectionProgram.class);
             selectionProgram.forEach(selectionProgramItem -> {
                 Log.d(TAG,selectionProgramItem.toString());
-                if(isTestMode)
+                if(mode == Constant.MODE_OFFICIAL)
                     selectionDao.insertItem(getSelection(selectionProgramItem));
-                else
-                    selectionDao.insertItem(getSelection_(selectionProgramItem));
+                else if(mode == Constant.MODE_TEST)
+                    selectionDao.insertTestItem(getSelectionTest(selectionProgramItem));
             });
 
             return Worker.Result.success();
@@ -95,8 +95,8 @@ public class LoadData extends Worker {
 
     //TestMode
     @NotNull
-    private Selection getSelection_(SelectionProgramItem selectionProgramItem) {
-        return new Selection(
+    private SelectionTest getSelectionTest(SelectionProgramItem selectionProgramItem) {
+        return new SelectionTest(
                 selectionProgramItem.getProgramId()+"_",
                 selectionProgramItem.getHour(),
                 selectionProgramItem.isAutoAddVersion(),

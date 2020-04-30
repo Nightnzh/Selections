@@ -26,7 +26,7 @@ public class HomeViewModel extends AndroidViewModel {
 
 
     private WorkManager workManager;
-    OneTimeWorkRequest loadSingleData;
+//    OneTimeWorkRequest loadSingleData;
     LiveData<List<WorkInfo>> loadSingleState;
 
     //constructor
@@ -49,10 +49,10 @@ public class HomeViewModel extends AndroidViewModel {
         return selectionMutableLiveData;
     }
 
-    void createWorkById(int id){
-        String url = "http://192.168.50.98/system_mvc/controller.php?s=dev,007459,500,laminationProgram,pp_program&action=mobile_programData";
-        Data in = new Data.Builder().putString("url",url).putString("programId", String.valueOf(id)).build();
-        loadSingleData = new OneTimeWorkRequest.Builder(LoadSingleData.class).setInputData(in).build();
-    }
+//    void createWorkById(int id){
+//        String url = "http://192.168.50.98/system_mvc/controller.php?s=dev,007459,500,laminationProgram,pp_program&action=mobile_programData";
+//        Data in = new Data.Builder().putString("url",url).putString("programId", String.valueOf(id)).build();
+//        loadSingleData = new OneTimeWorkRequest.Builder(LoadSingleData.class).setInputData(in).build();
+//    }
 }
 
