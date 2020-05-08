@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Selections</string>
+    <string name="language">語言</string>
+    <string name="Test_Mode">測試模式</string>
+    <string name="System_time">系統時間:</string>
+    <string name="Updata_data">同步資料</string>
+    <string name="programid">程式編號:</string>
+    <string name="vendor">廠商:</string>
+    <string name="ispaused">暫停使用:</string>
+    <string name="hour">小時:</string>
+    <string name="minute">分鐘:</string>
+    <string name="set_name">設置人:</string>
+    <string name="set_date">設置時間:</string>
+    <string name="select_all">全部選取</string>
+    <string name="notexit">不存在</string>
+    <string name="official">正式模式</string>
+    <string name="remark">註記:</string>
+    <string name="view">顯示內容</string>
+    <string name="ok">確認</string>
+    <string name="enter_id">輸入ID:</string>
+    <string name="loading">載入中...</string>
+    <string name="not_exist">不存在</string>
+    <string name="check_network">請檢查網路連線</string>
+    <string name="error">錯誤</string>
+</resources>

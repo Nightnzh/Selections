@@ -7,15 +7,16 @@ public class Constant{
 
     private static String TAG = Constant.class.getSimpleName();
 
+    public static int mode = 2;
     public static final int MODE_TEST = 3;
     public static final int MODE_OFFICIAL = 2;
 
+    public static String lang;
 
     //切換WIFI 101.168 boardtek
     //         50.98 小米
     public static final String IP_BOARDTEK = "192.168.101.168";
     public static final String IP_XIAOMI = "192.168.50.98";
-
     public static final String GET_PARAMS_MODE_TEST = "dev,007459,500,laminationProgram,pp_program&";
     public static final String GET_PARAMS_MODE_OFFICIAL = "modules_mvc,500,laminationProgram,pp_program&";
 

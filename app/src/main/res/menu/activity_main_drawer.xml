@@ -16,12 +16,13 @@
         <menu>
             <item android:title="@string/language"
                 android:icon="@drawable/ic_language"
-                android:id="@+id/menu_item_change_language" />
+                android:id="@+id/menu_item_language" />
             <item android:title="@string/Test_Mode"
                 android:icon="@drawable/ic_test_mode"
                 android:id="@+id/menu_item_test_mode"
                 app:actionLayout="@layout/switch_test"/>
             <item android:title="@string/Actions"
+                android:icon="@drawable/ic_ree"
                 android:id="@+id/menu_item_actions" />
         </menu>
     </item>

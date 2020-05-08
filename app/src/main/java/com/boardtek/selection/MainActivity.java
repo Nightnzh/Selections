@@ -1,10 +1,14 @@
 package com.boardtek.selection;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.IntentFilter;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,11 +20,14 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.annimon.stream.Stream;
 import com.boardtek.appcenter.AppCenter;
 import com.boardtek.appcenter.NetworkInformation;
+import com.boardtek.selection.adapter.language.LanguageAdapter;
+import com.boardtek.selection.databinding.LanguageLayoutBinding;
 import com.boardtek.selection.databinding.NavHeaderMainBinding;
 import com.boardtek.selection.datamodel.Action;
-import com.boardtek.selection.adapter.actionAdapter.ActionAdapter;
+import com.boardtek.selection.adapter.action.ActionAdapter;
 import com.boardtek.selection.databinding.ActionLayoutBinding;
 import com.boardtek.selection.databinding.ActivityMainBinding;
 import com.boardtek.selection.net.WifiReceiver;
@@ -52,6 +59,7 @@ import androidx.work.WorkInfo;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
@@ -66,17 +74,31 @@ public class MainActivity extends AppCompatActivity {
     private ActionLayoutBinding actionLayoutBinding;
     private ActionAdapter actionAdapter;
     private AlertDialog actionDialog;
+    private AlertDialog languageDialog;
     private RequestQueue volleyQueue;
     private SwitchCompat switchTest;
-    public static int mode;
 
     //WIFI
     private WifiReceiver wifiReceiver;
 
+    //language
+    LanguageLayoutBinding languageLayoutBinding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //getSharedPreferences("Setting",MODE_PRIVATE).edit().putString("Language",Locale.TAIWAN.getLanguage()).apply();
+        Constant.lang = getSharedPreferences("Setting", Context.MODE_PRIVATE).getString("Language",Locale.US.getCountry());
+//        Locale myLocale = new Locale(Constant.lang); //
+        Locale myLocale =  Constant.lang.equals(Locale.US.getCountry()) ? Locale.US :  Locale.TAIWAN ;
+        Resources res = getResources();
+        DisplayMetrics dm = res.getDisplayMetrics();
+        Configuration conf = res.getConfiguration();
+        conf.locale = myLocale;
+        res.updateConfiguration(conf, dm);
+
+
         //ViewModel
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
         //ViewBinding
@@ -86,9 +108,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(activityMainBinding.getRoot());
 
         // Setting
-        mode = getSharedPreferences("Setting",MODE_PRIVATE).getInt("MODE",Constant.MODE_OFFICIAL);
+        Constant.mode = getSharedPreferences("Setting",MODE_PRIVATE).getInt("MODE",Constant.MODE_OFFICIAL);
         activityMainBinding.navView.getMenu().findItem(R.id.menu_item_actions).setOnMenuItemClickListener(this::onOptionsItemSelected);
         activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).setOnMenuItemClickListener(this::onOptionsItemSelected);
+        activityMainBinding.navView.getMenu().findItem(R.id.menu_item_language).setOnMenuItemClickListener(this::onOptionsItemSelected);
         switchTest = (SwitchMaterial) activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).getActionView();
         switchTest.setOnCheckedChangeListener(this::onCheckedChanged);
 
@@ -112,23 +135,9 @@ public class MainActivity extends AppCompatActivity {
         AppCenter.init(this);
         initHeader(navigationView);
 
-        mainViewModel.loadAllDataState.observe(this,workInfos -> {
-            if(workInfos.size() == 0) return;
-            WorkInfo workInfo = workInfos.get(0);
-            Log.d(TAG,workInfo.getState().toString());
-            if(workInfo.getState()== WorkInfo.State.SUCCEEDED){
-                Loading.closeLoadingView();
-            } else if(workInfo.getState()== WorkInfo.State.RUNNING){
-                Loading.showLoadingView();
-            } else if(workInfo.getState()== WorkInfo.State.FAILED){
-                Loading.closeLoadingView();
-            }
-        });
-
 
         // Action
         actionLayoutBinding = ActionLayoutBinding.inflate(getLayoutInflater());
-
         actionLayoutBinding.checkSelectAll.setOnCheckedChangeListener(this::onCheckedChanged);
 
         //init Volley
@@ -145,6 +154,36 @@ public class MainActivity extends AppCompatActivity {
                     }
                 })
                 .create();
+
+        //language
+        languageLayoutBinding = LanguageLayoutBinding.inflate(getLayoutInflater());
+        languageLayoutBinding.reyclerView.setHasFixedSize(true);
+        languageLayoutBinding.reyclerView.setLayoutManager(new LinearLayoutManager(this));
+        languageLayoutBinding.reyclerView.setAdapter(new LanguageAdapter(this));
+        languageDialog = new MaterialAlertDialogBuilder(this)
+                .setView(languageLayoutBinding.getRoot())
+                .create();
+
+
+
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        mainViewModel.loadAllDataState.observe(this,workInfos -> {
+            if(workInfos.size() == 0) return;
+            WorkInfo workInfo = workInfos.get(0);
+            Log.d(TAG,workInfo.getState().toString());
+            if(workInfo.getState()== WorkInfo.State.SUCCEEDED){
+                Loading.closeLoadingView();
+            } else if(workInfo.getState()== WorkInfo.State.RUNNING){
+                Loading.showLoadingView();
+            } else if(workInfo.getState()== WorkInfo.State.FAILED){
+                Loading.closeLoadingView();
+            }
+        });
     }
 
     @SuppressLint("SetTextI18n")
@@ -165,15 +204,14 @@ public class MainActivity extends AppCompatActivity {
         });
         if(NetworkInformation.isConnected(this))
             textView_wifi.setText(NetworkInformation.getWifiRetek());
-        if(mode == Constant.MODE_OFFICIAL) {
+        if(Constant.mode == Constant.MODE_OFFICIAL) {
             textView_mode.setText(R.string.official);
             switchTest.setChecked(false);
         }
-        else if(mode == Constant.MODE_TEST) {
+        else if(Constant.mode == Constant.MODE_TEST) {
             textView_mode.setText(R.string.test);
             switchTest.setChecked(true);
         }
-
         //navigationView contentView
 
     }
@@ -216,12 +254,13 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         Log.d(TAG, getResources().getResourceName(item.getItemId()));
         switch (item.getItemId()){
+            //同步資料
             case R.id.update_data:
                 Data in;
                 if (NetworkInformation.isConnected(this)) {
                     in = new Data.Builder()
-                            .putString("url",Constant.getUrl(mode,Constant.ACTION_GET_ALL))
-                            .putInt("mode",mode)
+                            .putString("url",Constant.getUrl(Constant.mode,Constant.ACTION_GET_ALL))
+                            .putInt("mode",Constant.mode)
                             .build();
                     OneTimeWorkRequest loadAllData = new OneTimeWorkRequest.Builder(LoadAllData.class)
                             .setInputData(in)
@@ -233,18 +272,19 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else
                     new MaterialAlertDialogBuilder(this)
-                            .setTitle("Error")
+                            .setTitle(R.string.error)
                             .setIcon(R.drawable.ic_wifi)
-                            .setMessage("Network is not connected.\nPlease open the WIFI.")
-                            .setPositiveButton("OK", null)
+                            .setMessage(R.string.check_network)
+                            .setPositiveButton(R.string.ok, null)
                             .show();
                 return true;
+                //Action
             case R.id.menu_item_actions:
                 actionList.clear();
                 Map<String,String> posts = new HashMap<String, String>();
                 posts.put("programId",this.getSharedPreferences("Setting",MODE_PRIVATE).getString("TEMP_ID","0"));
-                actionList.add(new Action(Constant.ACTION_GET_ALL, Constant.getUrl(mode,Constant.ACTION_GET_ALL)));
-                actionList.add(new Action(Constant.ACTION_BY_PROGRAM_ID,Constant.getUrl(mode,Constant.ACTION_BY_PROGRAM_ID),posts));
+                actionList.add(new Action(Constant.ACTION_GET_ALL, Constant.getUrl( Constant.mode,Constant.ACTION_GET_ALL)));
+                actionList.add(new Action(Constant.ACTION_BY_PROGRAM_ID,Constant.getUrl(Constant.mode,Constant.ACTION_BY_PROGRAM_ID),posts));
                 Log.d(TAG,posts.toString());
                 actionAdapter = new ActionAdapter(actionList);
                 actionAdapter.setOnAllSelectedEvent(isAllSelected -> {
@@ -263,6 +303,9 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.menu_item_test_mode:
                 switchTest.setChecked(!switchTest.isChecked());
+                return true;
+            case R.id.menu_item_language:
+                languageDialog.show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -288,11 +331,13 @@ public class MainActivity extends AppCompatActivity {
         } else if(buttonView.getId() == R.id.switch_test){
             if(switchTest.isChecked()){
                 getSharedPreferences("Setting",MODE_PRIVATE).edit().putInt("MODE",Constant.MODE_TEST).apply();
-                mode = Constant.MODE_TEST;
+                Constant.mode = Constant.MODE_TEST;
+                Log.d("MODE", String.valueOf(Constant.mode));
                 navHeaderMainBinding.tHeadreMode.setText(R.string.test);
             } else {
                 getSharedPreferences("Setting",MODE_PRIVATE).edit().putInt("MODE",Constant.MODE_OFFICIAL).apply();
-                mode = Constant.MODE_OFFICIAL;
+                Constant.mode = Constant.MODE_OFFICIAL;
+                Log.d("MODE", String.valueOf(Constant.mode));
                 navHeaderMainBinding.tHeadreMode.setText(R.string.official);
             }
         }

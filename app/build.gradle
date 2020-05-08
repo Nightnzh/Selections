@@ -32,6 +32,7 @@ android {
             enabled = true
         }
     }
+
 }
 
 repositories {
@@ -40,7 +41,6 @@ repositories {
     }
     mavenCentral()
 }
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
@@ -58,7 +58,7 @@ dependencies {
     //company zz
     implementation(name: 'appcenter-1.1', ext: 'aar')    //認證中心資訊
     implementation(name: 'requesttask-2.2', ext: 'aar')  //請求模組
-    implementation(name: 'wkaidialog-2.0', ext: 'aar')
+//    implementation(name: 'wkaidialog-2.0', ext: 'aar')
     implementation "androidx.core:core-ktx:+"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
@@ -87,4 +87,9 @@ dependencies {
 
     //android volley
     implementation 'com.android.volley:volley:1.1.1'
+
+    //degug //https://github.com/amitshekhariitbhu/Android-Debug-Database
+
+    debugImplementation 'com.amitshekhar.android:debug-db:1.0.6'
+    debugImplementation 'com.amitshekhar.android:debug-db-encrypt:1.0.6'
 }

@@ -8,6 +8,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
+
+import com.annimon.stream.Stream;
 import com.boardtek.appcenter.AppCenter;
 import com.boardtek.selection.Constant;
 import com.boardtek.selection.datamodel.Selection;
@@ -60,7 +62,7 @@ public class LoadAllData extends Worker {
             String json = response.body().string();
             Log.d(TAG,"JSON:"+json);
             SelectionProgram selectionProgram = new Gson().fromJson(json,SelectionProgram.class);
-            selectionProgram.forEach(selectionProgramItem -> {
+            Stream.of(selectionProgram).forEach(selectionProgramItem -> {
                 Log.d(TAG,selectionProgramItem.toString());
                 if(mode == Constant.MODE_OFFICIAL)
                     selectionDao.insertItem(getSelection(selectionProgramItem));
@@ -97,7 +99,7 @@ public class LoadAllData extends Worker {
     @NotNull
     private SelectionTest getSelectionTest(SelectionProgramItem selectionProgramItem) {
         return new SelectionTest(
-                selectionProgramItem.getProgramId()+"_",
+                selectionProgramItem.getProgramId(),
                 selectionProgramItem.getHour(),
                 selectionProgramItem.isAutoAddVersion(),
                 selectionProgramItem.isPause(),
