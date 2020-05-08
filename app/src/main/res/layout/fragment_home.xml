@@ -23,7 +23,6 @@
         app:layout_constraintVertical_bias="0.06">
 
         <TextView
-            app:autoSizeTextType="uniform"
             android:id="@+id/t_content_programId"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -31,6 +30,7 @@
             android:layout_marginTop="16dp"
             android:text="@string/programid"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            app:autoSizeTextType="none"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -262,7 +262,12 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:clickable="true"
+        android:focusable="true"
+        app:backgroundTint="#6B96BD"
+        app:backgroundTintMode="add"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_search" />
+        app:rippleColor="@color/design_default_color_surface"
+        app:srcCompat="@android:drawable/ic_search_category_default"
+        app:tint="#284B63" />
 </androidx.constraintlayout.widget.ConstraintLayout>
