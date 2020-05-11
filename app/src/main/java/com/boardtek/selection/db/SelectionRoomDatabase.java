@@ -20,7 +20,7 @@ import java.util.concurrent.Executors;
 public abstract class SelectionRoomDatabase extends RoomDatabase {
 
     //Dao
-    public abstract SelectionDao selectionDao();
+    public abstract SelectionDao dbDao();
 
     //單一實例
     private static volatile SelectionRoomDatabase INSTANCE;

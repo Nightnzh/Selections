@@ -30,7 +30,7 @@
     <string name="isautoaddversion" translatable="false">IsAutoVersion:</string>
     <string name="remark">ReMark:</string>
     <string name="official">OFFICIAL</string>
-    <string name="test" translatable="false">TEST</string>
+    <string name="test">TEST</string>
     <string name="notexit">Not Exit</string>
     <string name="ok">OK</string>
     <string name="enter_id">Enter ID :</string>
@@ -38,4 +38,11 @@
     <string name="not_exist">Not Exist</string>
     <string name="check_network">Please check your network.</string>
     <string name="error">Error</string>
+    <string name="moblie">"Mobile: "</string>
+    <string name="delete_data">Delete data</string>
+    <string name="delete_all">Delete All</string>
+    <string name="ask_for_delete">"Are you sure to delete all date of "</string>
+    <string name="cancel">Cancel</string>
+    <string name="n_null">Data is null</string>
+
 </resources>

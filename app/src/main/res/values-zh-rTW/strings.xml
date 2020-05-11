@@ -23,4 +23,11 @@
     <string name="not_exist">不存在</string>
     <string name="check_network">請檢查網路連線</string>
     <string name="error">錯誤</string>
+    <string name="moblie">手機編號:</string>
+    <string name="delete_data">刪除資料</string>
+    <string name="delete_all">刪除全部</string>
+    <string name="ask_for_delete">你確定要刪除全部資料嗎</string>
+    <string name="cancel">取消</string>
+    <string name="test">測試區</string>
+    <string name="n_null">資料為空</string>
 </resources>

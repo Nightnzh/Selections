@@ -13,14 +13,17 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
+import android.view.WindowManager;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.annimon.stream.Stream;
 import com.boardtek.appcenter.AppCenter;
 import com.boardtek.appcenter.NetworkInformation;
 import com.boardtek.selection.adapter.language.LanguageAdapter;
@@ -30,6 +33,7 @@ import com.boardtek.selection.datamodel.Action;
 import com.boardtek.selection.adapter.action.ActionAdapter;
 import com.boardtek.selection.databinding.ActionLayoutBinding;
 import com.boardtek.selection.databinding.ActivityMainBinding;
+import com.boardtek.selection.db.SelectionRoomDatabase;
 import com.boardtek.selection.net.WifiReceiver;
 import com.boardtek.selection.ui.v.Loading;
 import com.boardtek.selection.ui.v.ShowActionResponse;
@@ -101,11 +105,11 @@ public class MainActivity extends AppCompatActivity {
 
         //ViewModel
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
-        //ViewBinding
 
+        //ViewBinding
         activityMainBinding = ActivityMainBinding.inflate(getLayoutInflater());
         navHeaderMainBinding = NavHeaderMainBinding.bind(activityMainBinding.navView.getHeaderView(0));
-        setContentView(activityMainBinding.getRoot());
+        setContentView(activityMainBinding.getRoot().getRootView());
 
         // Setting
         Constant.mode = getSharedPreferences("Setting",MODE_PRIVATE).getInt("MODE",Constant.MODE_OFFICIAL);
@@ -118,7 +122,8 @@ public class MainActivity extends AppCompatActivity {
         //loadingView
         loading = new Loading(this);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
+//        Toolbar toolbar = findViewById(R.id.toolbar);
+        Toolbar toolbar = activityMainBinding.include.toolbar;
         setSupportActionBar(toolbar);
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
@@ -131,6 +136,8 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
+
+
         NetworkInformation.init(this);
         AppCenter.init(this);
         initHeader(navigationView);
@@ -155,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .create();
 
+
         //language
         languageLayoutBinding = LanguageLayoutBinding.inflate(getLayoutInflater());
         languageLayoutBinding.reyclerView.setHasFixedSize(true);
@@ -163,8 +171,6 @@ public class MainActivity extends AppCompatActivity {
         languageDialog = new MaterialAlertDialogBuilder(this)
                 .setView(languageLayoutBinding.getRoot())
                 .create();
-
-
 
     }
 
@@ -198,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
         TextView textView_mode = headerView.findViewById(R.id.t_headre_mode);
 //        textView_appName.setText("壓機程式自動選用");
         textView_user.setText(AppCenter.uName + ":" + AppCenter.uId);
-        textView_mobile.setText("Mobile: "+ AppCenter.mobileSn);
+        textView_mobile.setText(getString(R.string.moblie)+ AppCenter.mobileSn);
         AppCenter.addTimerPerSecondListener(() -> {
             textView_NowTime.setText(getString(R.string.System_time) +"\n"+AppCenter.getSystemTime());
         });
@@ -278,6 +284,34 @@ public class MainActivity extends AppCompatActivity {
                             .setPositiveButton(R.string.ok, null)
                             .show();
                 return true;
+            case R.id.delete_data:
+                String ms = "";
+                if(Constant.lang.equals(Locale.US.getCountry())){
+                    ms = (Constant.mode == Constant.MODE_OFFICIAL ? "Are you sure to delete all data of " + getString(R.string.official) : "Are you sure to delete all data of "+ getString(R.string.test)) + " ?";
+                } else {
+                    ms = (Constant.mode == Constant.MODE_OFFICIAL ? "你確定要刪除"  + getString(R.string.official) : "你確定要刪除" + getString(R.string.test)) + "的全部資料媽?";
+                }
+
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.delete_all)
+                        .setMessage(ms)
+                        .setPositiveButton(R.string.cancel,null)
+                        .setNegativeButton(getString(R.string.ok),(dialog, which) -> {
+                            if(Constant.mode == Constant.MODE_OFFICIAL){
+                                SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
+                                    SelectionRoomDatabase.getDatabase(this).dbDao().deleteAll();
+                                });
+                                Toast.makeText(this, R.string.delete_all, Toast.LENGTH_SHORT).show();
+                            } else {
+                                SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
+                                    SelectionRoomDatabase.getDatabase(this).dbDao().deleteTestAll();
+                                });
+                                Toast.makeText(this, R.string.delete_all, Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .show();
+
+                return true;
                 //Action
             case R.id.menu_item_actions:
                 actionList.clear();
@@ -293,13 +327,16 @@ public class MainActivity extends AppCompatActivity {
                     actionLayoutBinding.checkSelectAll.setOnCheckedChangeListener(this::onCheckedChanged);
                 });
                 RecyclerView recycler = actionLayoutBinding.recyclerAction;
-                recycler.setHasFixedSize(true);
+                recycler.setHasFixedSize(false);
                 recycler.setLayoutManager(new LinearLayoutManager(this));
                 recycler.setAdapter(actionAdapter);
 //                mainViewModel.getActionListLiveData().postValue(actionList);
 
                 actionLayoutBinding.checkSelectAll.setChecked(false);
+
                 actionDialog.show();
+                actionDialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+
                 return true;
             case R.id.menu_item_test_mode:
                 switchTest.setChecked(!switchTest.isChecked());
@@ -323,6 +360,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG,getResources().getResourceName(buttonView.getId()));
         if(buttonView.getId() == R.id.check_select_all) {
+            this.getCurrentFocus().clearFocus();
             if (isChecked) {
                 actionAdapter.checkAll();
             } else {

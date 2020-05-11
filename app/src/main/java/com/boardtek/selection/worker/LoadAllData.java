@@ -41,7 +41,7 @@ public class LoadAllData extends Worker {
 
     public LoadAllData(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
-        selectionDao = SelectionRoomDatabase.getDatabase(context).selectionDao();
+        selectionDao = SelectionRoomDatabase.getDatabase(context).dbDao();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)

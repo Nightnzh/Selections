@@ -26,6 +26,9 @@ public interface SelectionDao {
     @Query("delete from selection")
     void deleteAll();
 
+    @Query("delete from SelectionTest")
+    void deleteTestAll();
+
     @Query("select * from selectionTest where :id = programId limit 1")
     Selection getSelectionTest(int id);
 

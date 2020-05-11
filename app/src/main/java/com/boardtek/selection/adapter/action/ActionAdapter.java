@@ -5,9 +5,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.annimon.stream.Stream;
@@ -15,6 +17,7 @@ import com.boardtek.selection.R;
 import com.boardtek.selection.datamodel.Action;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ActionAdapter extends RecyclerView.Adapter<ActionAdapter.ActionViewHolder> {
 
@@ -83,20 +86,49 @@ public class ActionAdapter extends RecyclerView.Adapter<ActionAdapter.ActionView
 
         private TextView tIndex;
         private CheckBox checkBoxItem;
+        private RecyclerView recyclerPost;
+        private ImageView iPostSetting;
 
         public ActionViewHolder(@NonNull View itemView) {
             super(itemView);
             tIndex = itemView.findViewById(R.id.t_action_index);
-            checkBoxItem = itemView.findViewById(R.id.check_item);
+            checkBoxItem = itemView.findViewById(R.id.c_action);
+            iPostSetting = itemView.findViewById(R.id.i_action_setting);
+            recyclerPost = itemView.findViewById(R.id.recycler_action_post);
         }
 
         void bindTo(Action action,int position){
+            final Boolean[] vs = {false};
+            //bind
             tIndex.setText(position+1+".");
-            checkBoxItem.setText(action.getName());
+            String actionName = action.getName().substring(action.getName().indexOf("=")).substring(1);
+            checkBoxItem.setText(actionName);
             if(action.getChecked())
                 checkBoxItem.setChecked(true);
             else
                 checkBoxItem.setChecked(false);
+
+            //recyclerView post
+            if(action.getPosts()==null) {
+                iPostSetting.setVisibility(View.INVISIBLE);
+                return;
+            }
+
+            recyclerPost.setHasFixedSize(true);
+            recyclerPost.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
+            recyclerPost.setAdapter(new ActionPostAdapter(action.getPosts()));
+
+            recyclerPost.setVisibility(View.GONE);
+
+            iPostSetting.setOnClickListener(v -> {
+                if(vs[0]) {
+                    recyclerPost.setVisibility(View.GONE);
+                    vs[0] = false;
+                }else {
+                    recyclerPost.setVisibility(View.VISIBLE);
+                    vs[0] = true;
+                }
+            });
         }
 
     }

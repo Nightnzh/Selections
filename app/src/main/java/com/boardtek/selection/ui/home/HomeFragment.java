@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -23,9 +24,9 @@ import com.boardtek.appcenter.NetworkInformation;
 import com.boardtek.selection.Constant;
 import com.boardtek.selection.R;
 import com.boardtek.selection.adapter.datacontent.DataContentAdapter;
+import com.boardtek.selection.databinding.DataContentLayoutBinding;
 import com.boardtek.selection.databinding.EnterNumBinding;
 import com.boardtek.selection.databinding.FragmentHomeBinding;
-import com.boardtek.selection.databinding.RecyclerLayoutBinding;
 import com.boardtek.selection.datamodel.DataContent;
 import com.boardtek.selection.datamodel.Selection;
 import com.boardtek.selection.db.SelectionRoomDatabase;
@@ -69,15 +70,15 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         }else {
             fragmentHomeBinding.tContentMode.setText("TEST");
         }
-        fragmentHomeBinding.tContentProgramId.setText(getString(R.string.programid) + selection.getProgramId());
-        fragmentHomeBinding.tContentVendor.setText(getString(R.string.vendor) + selection.getVendorTitle());
-        fragmentHomeBinding.tContentIsPaused.setText(getString(R.string.ispaused) + selection.isPause());
-        fragmentHomeBinding.tContentHour.setText(getString(R.string.hour) + selection.getHour());
-        fragmentHomeBinding.tContentMinute.setText(getString(R.string.minute) + selection.getMinute());
-        fragmentHomeBinding.tContentSetName.setText(getString(R.string.set_name) + selection.getSetName());
-        fragmentHomeBinding.tContentSetDate.setText(getString(R.string.set_date)  + selection.getSetDate());
-        fragmentHomeBinding.tContentIsAutoVersion.setText(getString(R.string.isautoaddversion)+selection.isAutoAddVersion());
-        fragmentHomeBinding.tContentRemark.setText(getString(R.string.remark)+selection.getRemark());
+        fragmentHomeBinding.tContentProgramId.setText(getString(R.string.programid)  +selection.getProgramId());
+        fragmentHomeBinding.tContentVendor.setText(getString(R.string.vendor) +"\n" +selection.getVendorTitle());
+        fragmentHomeBinding.tContentIsPaused.setText(getString(R.string.ispaused) +"\n" +selection.isPause());
+        fragmentHomeBinding.tContentHour.setText(getString(R.string.hour) +"\n" +selection.getHour());
+        fragmentHomeBinding.tContentMinute.setText(getString(R.string.minute) +"\n" +selection.getMinute());
+        fragmentHomeBinding.tContentSetName.setText(getString(R.string.set_name) +"\n" +selection.getSetName());
+        fragmentHomeBinding.tContentSetDate.setText(getString(R.string.set_date)  +"\n" +selection.getSetDate());
+        fragmentHomeBinding.tContentIsAutoVersion.setText(getString(R.string.isautoaddversion)+"\n"+selection.isAutoAddVersion());
+        fragmentHomeBinding.tContentRemark.setText(getString(R.string.remark)+"\n"+selection.getRemark());
         fragmentHomeBinding.bContentDataPp.setOnClickListener(this);
         fragmentHomeBinding.bContentDataContent.setOnClickListener(this);
     }
@@ -110,11 +111,11 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
                         } else if(!NetworkInformation.isConnected(requireContext())){
                             if (Constant.mode == Constant.MODE_OFFICIAL) {
                                 SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
-                                    homeViewModel.getSelectionMutableLiveData().postValue(SelectionRoomDatabase.getDatabase(getContext()).selectionDao().getSelection(Integer.parseInt(id)));
+                                    homeViewModel.getSelectionMutableLiveData().postValue(SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelection(Integer.parseInt(id)));
                                 });
                             }else {
                                 SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
-                                    homeViewModel.getSelectionMutableLiveData().postValue(SelectionRoomDatabase.getDatabase(getContext()).selectionDao().getSelectionTest(Integer.parseInt(id)));
+                                    homeViewModel.getSelectionMutableLiveData().postValue(SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelectionTest(Integer.parseInt(id)));
                                 });
                             }
                         }
@@ -123,13 +124,16 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         }
         if (v.getId() == R.id.b_content_data_content) {
             String json = Objects.requireNonNull(homeViewModel.getSelectionMutableLiveData().getValue()).getData_content();
-            List<DataContent> list = new Gson().fromJson(json, new TypeToken<List<DataContent>>() {
-            }.getType());
+            if(json.equals("[]")) {
+                Toast.makeText(requireContext(), R.string.n_null, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            List<DataContent> list = new Gson().fromJson(json, new TypeToken<List<DataContent>>() {}.getType());
             assert list != null;
             Log.d(TAG, list.toString());
-            RecyclerLayoutBinding recyclerLayoutBinding = RecyclerLayoutBinding.inflate(getLayoutInflater());
-            View view = recyclerLayoutBinding.getRoot();
-            RecyclerView recyclerView = recyclerLayoutBinding.recycler;
+            DataContentLayoutBinding dataContentLayoutBinding = DataContentLayoutBinding.inflate(getLayoutInflater());
+            View view = dataContentLayoutBinding.getRoot();
+            RecyclerView recyclerView = dataContentLayoutBinding.recycler;
             recyclerView.setHasFixedSize(true);
             recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
             recyclerView.setAdapter(new DataContentAdapter(list));
@@ -140,6 +144,10 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
 
         if(v.getId() == R.id.b_content_data_pp){
             String json = Objects.requireNonNull(homeViewModel.getSelectionMutableLiveData().getValue()).getData_pp();
+            if(json.equals("[]")) {
+                Toast.makeText(requireContext(), getString(R.string.n_null), Toast.LENGTH_SHORT).show();
+                return;
+            }
             new MaterialAlertDialogBuilder(requireContext())
                     .setMessage(json)
                     .show();
@@ -188,13 +196,13 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
                                 if(Constant.mode == Constant.MODE_OFFICIAL) {
                                     SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
                                         homeViewModel.getSelectionMutableLiveData().postValue(
-                                                SelectionRoomDatabase.getDatabase(getContext()).selectionDao().getSelection(Integer.parseInt(id))
+                                                SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelection(Integer.parseInt(id))
                                         );
                                     });
                                 } else {
                                     SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
                                         homeViewModel.getSelectionMutableLiveData().postValue(
-                                                SelectionRoomDatabase.getDatabase(getContext()).selectionDao().getSelectionTest(Integer.parseInt(id))
+                                                SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelectionTest(Integer.parseInt(id))
                                         );
                                     });
                                 }

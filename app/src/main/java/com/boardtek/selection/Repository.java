@@ -2,8 +2,6 @@ package com.boardtek.selection;
 
 import android.app.Application;
 
-import androidx.lifecycle.LiveData;
-
 import com.boardtek.selection.datamodel.Selection;
 import com.boardtek.selection.db.SelectionDao;
 import com.boardtek.selection.db.SelectionRoomDatabase;
@@ -15,7 +13,7 @@ public class Repository {
 
     public Repository(Application application){
         SelectionRoomDatabase selectionRoomDatabase = SelectionRoomDatabase.getDatabase(application);
-        selectionDao = selectionRoomDatabase.selectionDao();
+        selectionDao = selectionRoomDatabase.dbDao();
     }
 
 //    public Selection getSelectionFromId(int id){

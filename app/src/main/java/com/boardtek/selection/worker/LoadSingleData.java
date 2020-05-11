@@ -33,7 +33,7 @@ public class LoadSingleData extends Worker {
 
     public LoadSingleData(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
-        selectionDao = SelectionRoomDatabase.getDatabase(getApplicationContext()).selectionDao();
+        selectionDao = SelectionRoomDatabase.getDatabase(getApplicationContext()).dbDao();
     }
 
 
