@@ -4,7 +4,7 @@ class SelectionProgram : ArrayList<SelectionProgramItem>()
 
 data class SelectionProgramItem(
     val data_content: List<DataContent>,
-    val data_pp: List<Any>,
+    val data_pp: List<DataPp>,
     val hour: String,
     val isAutoAddVersion: String,
     val isPause: String,
@@ -21,4 +21,9 @@ data class DataContent(
     val pressureTime: String,
     val thermo: String,
     val thermoTime: String
+)
+
+data class DataPp(
+        val typeTitle:String,
+        val modelTitle:String
 )

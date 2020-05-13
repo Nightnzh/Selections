@@ -15,7 +15,6 @@ import android.view.View;
 import android.view.Menu;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -60,6 +59,7 @@ import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
     private AlertDialog languageDialog;
     private RequestQueue volleyQueue;
     private SwitchCompat switchTest;
+    private NavController navController;
 
     //WIFI
     private WifiReceiver wifiReceiver;
@@ -92,9 +93,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //getSharedPreferences("Setting",MODE_PRIVATE).edit().putString("Language",Locale.TAIWAN.getLanguage()).apply();
+        //Language
         Constant.lang = getSharedPreferences("Setting", Context.MODE_PRIVATE).getString("Language",Locale.US.getCountry());
-//        Locale myLocale = new Locale(Constant.lang); //
         Locale myLocale =  Constant.lang.equals(Locale.US.getCountry()) ? Locale.US :  Locale.TAIWAN ;
         Resources res = getResources();
         DisplayMetrics dm = res.getDisplayMetrics();
@@ -102,45 +102,58 @@ public class MainActivity extends AppCompatActivity {
         conf.locale = myLocale;
         res.updateConfiguration(conf, dm);
 
-
         //ViewModel
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
 
         //ViewBinding
         activityMainBinding = ActivityMainBinding.inflate(getLayoutInflater());
         navHeaderMainBinding = NavHeaderMainBinding.bind(activityMainBinding.navView.getHeaderView(0));
+
         setContentView(activityMainBinding.getRoot().getRootView());
+
+
+        //Network
+        NetworkInformation.init(this);
+        //AppCenter
+        AppCenter.init(this);
 
         // Setting
         Constant.mode = getSharedPreferences("Setting",MODE_PRIVATE).getInt("MODE",Constant.MODE_OFFICIAL);
+        activityMainBinding.navView.getMenu().findItem(R.id.menu_item_language).setOnMenuItemClickListener(this::onOptionsItemSelected);
         activityMainBinding.navView.getMenu().findItem(R.id.menu_item_actions).setOnMenuItemClickListener(this::onOptionsItemSelected);
         activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).setOnMenuItemClickListener(this::onOptionsItemSelected);
-        activityMainBinding.navView.getMenu().findItem(R.id.menu_item_language).setOnMenuItemClickListener(this::onOptionsItemSelected);
         switchTest = (SwitchMaterial) activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).getActionView();
         switchTest.setOnCheckedChangeListener(this::onCheckedChanged);
+
+        //D30 D31顯示
+        Log.d("depSn", String.valueOf(AppCenter.depSn));
+        if(AppCenter.depSn == 60 || AppCenter.depSn == 156){
+            activityMainBinding.navView.getMenu().findItem(R.id.menu_item_actions).setVisible(true);
+            activityMainBinding.navView.getMenu().findItem(R.id.menu_item_test_mode).setVisible(true);
+        }
 
         //loadingView
         loading = new Loading(this);
 
-//        Toolbar toolbar = findViewById(R.id.toolbar);
         Toolbar toolbar = activityMainBinding.include.toolbar;
         setSupportActionBar(toolbar);
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        NavigationView navigationView = findViewById(R.id.nav_view);
+//        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = activityMainBinding.drawerLayout;
+//        NavigationView navigationView = findViewById(R.id.nav_view);
+        NavigationView navigationView = activityMainBinding.navView;
+
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.nav_home)
                 .setDrawerLayout(drawer)
                 .build();
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
+
+        navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
 
-
-        NetworkInformation.init(this);
-        AppCenter.init(this);
-        initHeader(navigationView);
+        initDrawerHeader(navigationView);
 
 
         // Action
@@ -153,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         actionDialog = new MaterialAlertDialogBuilder(this)
                 .setView(actionLayoutBinding.getRoot())
                 .setIcon(R.drawable.ic_view)
-                .setPositiveButton("OK",(dialog, which) -> {
+                .setPositiveButton("RUN",(dialog, which) -> {
                     for(Action action : actionList){
                         if(action.getChecked()){
                             createAndStartActionRequest(action);
@@ -193,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("SetTextI18n")
-    void initHeader(NavigationView navigationView){
+    void initDrawerHeader(NavigationView navigationView){
         //navigationView headerView
         View headerView = navigationView.getHeaderView(0);
 //        TextView textView_appName =  (TextView) headerView.findViewById(R.id.t_header_app_name);
@@ -225,17 +238,18 @@ public class MainActivity extends AppCompatActivity {
     private void createAndStartActionRequest(Action action){
         StringRequest getActionRequest;
         if(action.getPosts()==null) {
-            getActionRequest = new StringRequest(action.getUrl(),response -> {
-                Log.d(TAG,response);
-                ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),response);
+            getActionRequest = new StringRequest(action.getUrl(), response -> {
+                        Log.d(TAG,new String(response.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8));
+                        ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),
+                        new String(response.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8));
             },error -> {
                 Log.d(TAG,error.toString());
                 ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),error.toString());
             });
         } else {
             getActionRequest = new StringRequest(Request.Method.POST,action.getUrl(),response -> {
-                Log.d(TAG,response);
-                ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),response);
+                Log.d(TAG,new String(response.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8));
+                ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),new String(response.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8));
             },error -> {
                 Log.d(TAG,error.toString());
                 ShowActionResponse.createAndShow(this,action.getName(),action.getUrl(),action.getPosts(),error.toString());
@@ -262,19 +276,30 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()){
             //同步資料
             case R.id.update_data:
-                Data in;
                 if (NetworkInformation.isConnected(this)) {
-                    in = new Data.Builder()
-                            .putString("url",Constant.getUrl(Constant.mode,Constant.ACTION_GET_ALL))
-                            .putInt("mode",Constant.mode)
-                            .build();
-                    OneTimeWorkRequest loadAllData = new OneTimeWorkRequest.Builder(LoadAllData.class)
-                            .setInputData(in)
-                            .build();
 
-                    mainViewModel.workManager
-                            .beginUniqueWork("LoadAllData", ExistingWorkPolicy.REPLACE, loadAllData)
-                            .enqueue();
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.synchronize_data)
+                            .setIcon(R.drawable.ic_syncronization)
+                            .setMessage(R.string.ask_for_a_lot_data)
+                            .setPositiveButton(getString(R.string.cancel),null)
+                            .setNegativeButton(getString(R.string.ok),(dialog, which) -> {
+                                Data in = new Data.Builder()
+                                        .putString("url",Constant.getUrl(Constant.mode,Constant.ACTION_GET_ALL))
+                                        .putString("mac",NetworkInformation.macAddress)
+                                        .putString("uSn", String.valueOf(AppCenter.uSn))
+                                        .putString("mobileSn", String.valueOf(AppCenter.mobileSn))
+                                        .putInt("mode",Constant.mode)
+                                        .build();
+                                OneTimeWorkRequest loadAllData = new OneTimeWorkRequest.Builder(LoadAllData.class)
+                                        .setInputData(in)
+                                        .build();
+
+                                mainViewModel.workManager
+                                        .beginUniqueWork("LoadAllData", ExistingWorkPolicy.REPLACE, loadAllData)
+                                        .enqueue();
+                            }).show();
+
                 }
                 else
                     new MaterialAlertDialogBuilder(this)
@@ -293,7 +318,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 new MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.delete_all)
+                        .setTitle(R.string.delete_local_data)
+                        .setIcon(R.drawable.ic_can)
                         .setMessage(ms)
                         .setPositiveButton(R.string.cancel,null)
                         .setNegativeButton(getString(R.string.ok),(dialog, which) -> {
@@ -317,6 +343,11 @@ public class MainActivity extends AppCompatActivity {
                 actionList.clear();
                 Map<String,String> posts = new HashMap<String, String>();
                 posts.put("programId",this.getSharedPreferences("Setting",MODE_PRIVATE).getString("TEMP_ID","0"));
+
+//                posts.put("mobileSn", String.valueOf(AppCenter.mobileSn));
+//                posts.put("uSn", String.valueOf(AppCenter.uSn));
+//                posts.put("mac", NetworkInformation.macAddress);
+
                 actionList.add(new Action(Constant.ACTION_GET_ALL, Constant.getUrl( Constant.mode,Constant.ACTION_GET_ALL)));
                 actionList.add(new Action(Constant.ACTION_BY_PROGRAM_ID,Constant.getUrl(Constant.mode,Constant.ACTION_BY_PROGRAM_ID),posts));
                 Log.d(TAG,posts.toString());
@@ -360,7 +391,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG,getResources().getResourceName(buttonView.getId()));
         if(buttonView.getId() == R.id.check_select_all) {
-            this.getCurrentFocus().clearFocus();
+            actionDialog.getCurrentFocus().clearFocus();
             if (isChecked) {
                 actionAdapter.checkAll();
             } else {
@@ -397,6 +428,9 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("SetTextI18n")
     public void OnNetworkChange(Boolean isConnected, WifiInfo wifiInfo) {
+
+
+
         if (isConnected) {
             NetworkInformation.init(this);
             String ssid = wifiInfo == null ? "" : wifiInfo.getSSID();
@@ -405,6 +439,9 @@ public class MainActivity extends AppCompatActivity {
             NetworkInformation.clear();
             navHeaderMainBinding.tHeaderWifiName.setText("null");
         }
+        navController.popBackStack();
+        navController.navigate(R.id.nav_home);
+
     }
 
     //暫停, 註銷廣播
@@ -413,22 +450,5 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         if (wifiReceiver!=null) unregisterReceiver(wifiReceiver);
     }
-
 }
 
-
-//        mainViewModel.actionListLiveData.observe(this,actions -> {
-//            if(actions==null)
-//                return;
-//
-//            Log.d("@@@@@",actions.toString());
-//            for (Action action : actions){
-//
-//                if(!action.getChecked()) {
-//                    actionLayoutBinding.checkSelectAll.setChecked(false);
-//                    return;
-//                }else {
-//                    actionLayoutBinding.checkSelectAll.setChecked(true);
-//                }
-//            }
-//        });

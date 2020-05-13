@@ -44,4 +44,17 @@
     <string name="ask_for_delete">"Are you sure to delete all data of "</string>
     <string name="cancel">Cancel</string>
     <string name="n_null">Data is null</string>
+    <string name="typetittle">typeTittle:</string>
+    <string name="modeltittle">modelTittle:</string>
+    <string name="pressure_time">pressure time:</string>
+    <string name="pressure">pressure:</string>
+    <string name="thermo">thermo:</string>
+    <string name="thermo_time">thermo time:</string>
+    <string name="please_research">Please research.</string>
+    <string name="search_is_not_exit">Your search is not exist.</string>
+    <string name="online">ONLINE</string>
+    <string name="offline">OFFLINE</string>
+    <string name="delete_local_data">Delete Local Data</string>
+    <string name="ask_for_a_lot_data">Take a second.</string>
+    <string name="synchronize_data">Synchronize Data</string>
 </resources>

@@ -2,10 +2,6 @@ package com.boardtek.selection.adapter.language;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.content.res.Resources;
-import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,7 +11,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.boardtek.selection.Constant;
 import com.boardtek.selection.MainActivity;
 import com.boardtek.selection.R;
 
@@ -27,7 +22,7 @@ import static android.content.Context.MODE_PRIVATE;
 
 public class LanguageAdapter extends RecyclerView.Adapter<LanguageAdapter.LanguageViewHolder> {
 
-    private List<String> list = Arrays.asList("English", "Chinese");
+    private List<String> list = Arrays.asList("US", "Chinese");
 
     public LanguageAdapter(Context context) {
         this.context = context;
@@ -45,8 +40,8 @@ public class LanguageAdapter extends RecyclerView.Adapter<LanguageAdapter.Langua
     @Override
     public void onBindViewHolder(@NonNull LanguageViewHolder holder, int position) {
         switch (list.get(position)){
-            case "English":
-                holder.bindTo(R.drawable.us,"English");
+            case "US":
+                holder.bindTo(R.drawable.us,"US");
                 holder.itemView.setOnClickListener(v -> {
                     context.getSharedPreferences("Setting",MODE_PRIVATE).edit().putString("Language",Locale.US.getCountry()).apply();
                     Intent restart = new Intent(context, MainActivity.class);

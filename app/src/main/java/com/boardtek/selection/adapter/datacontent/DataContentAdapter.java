@@ -43,10 +43,10 @@ class DataViewHolder extends RecyclerView.ViewHolder{
     private TextView tPressure;
     public DataViewHolder(@NonNull View itemView) {
         super(itemView);
-        tThermoTime = itemView.findViewById(R.id.t_thermo_time);
-        tThermo = itemView.findViewById(R.id.t_thermo);
-        tPressureTime = itemView.findViewById(R.id.t_pressure_time);
-        tPressure = itemView.findViewById(R.id.t_pressure);
+        tThermo = itemView.findViewById(R.id.t_data_content_thermo);
+        tThermoTime = itemView.findViewById(R.id.t_data_content_thermo_time);
+        tPressure = itemView.findViewById(R.id.t_data_content_pressure);
+        tPressureTime = itemView.findViewById(R.id.t_data_content_pressure_time);
     }
 
     void bindTo(DataContent dataContent){

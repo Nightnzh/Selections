@@ -10,18 +10,18 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> <!--wifi資訊-->
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <!--相機相關權限-->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!--<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <!--其他權限-->
-    <uses-permission android:name="android.permission.VIBRATE" /> <!--震動-->
-    <uses-permission android:name="android.permission.FLASHLIGHT" /><!--手電筒-->
+    &lt;!&ndash;其他權限&ndash;&gt;
+    <uses-permission android:name="android.permission.VIBRATE" /> &lt;!&ndash;震動&ndash;&gt;
+    <uses-permission android:name="android.permission.FLASHLIGHT" />&lt;!&ndash;手電筒&ndash;&gt;-->
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_data"
+        android:roundIcon="@drawable/ic_data"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity

@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.Map;
 
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
@@ -40,19 +41,29 @@ public class LoadSingleData extends Worker {
     @NonNull
     @Override
     public Result doWork() {
+
         String url = getInputData().getString("url");
+        String mac = getInputData().getString("mac");
+        String uSn = getInputData().getString("uSn");
         String programId = getInputData().getString("programId");
-        int mode = getInputData().getInt("mode",2);
-        Log.d(TAG,url+"programId="+programId);
+        String mobileSn = getInputData().getString("mobileSn");
+        int mode = getInputData().getInt("mode",Constant.MODE_OFFICIAL);
+
+
+        Log.d(TAG,uSn);
         OkHttpClient okHttpClient = new OkHttpClient();
         FormBody formBody = new FormBody.Builder()
                 .add("programId",programId)
+                .add("mac",mac)
+                .add("uSn",uSn)
+                .add("mobileSn",mobileSn)
                 .build();
 
         Request request = new Request.Builder()
                 .url(url)
                 .post(formBody)
                 .build();
+
         try {
             Response response = okHttpClient.newCall(request).execute();
             String json = response.body().string();

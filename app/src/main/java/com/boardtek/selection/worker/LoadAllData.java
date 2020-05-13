@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
+import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -49,13 +50,24 @@ public class LoadAllData extends Worker {
     @Override
     public Result doWork() {
         String url = getInputData().getString("url");
+        String mac = getInputData().getString("mac");
+        String uSn = getInputData().getString("uSn");
+        String mobileSn = getInputData().getString("mobileSn");
         int mode = getInputData().getInt("mode", Constant.MODE_OFFICIAL);
         Log.d(TAG,"URL:"+url);
 
         OkHttpClient okHttpClient = new OkHttpClient();
+
+        FormBody formBody = new FormBody.Builder()
+                .add("mac",mac)
+                .add("uSn",uSn)
+                .add("mobileSn",mobileSn)
+                .build();
+
         assert url != null;
         Request request = new Request.Builder()
                 .url(url)
+                .post(formBody)
                 .build();
         try {
             Response response = okHttpClient.newCall(request).execute();

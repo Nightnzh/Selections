@@ -10,16 +10,12 @@
         android:id="@+id/update_data"
         android:title="@string/Updata_data"
         android:icon="@drawable/ic_syncronization"
-        app:showAsAction="ifRoom"
-        />
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/delete_data"
         android:title="@string/delete_data"
         android:icon="@drawable/ic_can"
-        app:showAsAction="ifRoom"
-        />
-
-
+        app:showAsAction="ifRoom" />
 
 </menu>

@@ -7,8 +7,8 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_home"
-            android:icon="@drawable/ic_menu_camera"
-            android:title="@string/menu_home" />
+            android:title="@string/menu_home"
+            android:visible="true"/>
     </group>
 
     <item android:title="@string/Controller"
@@ -18,12 +18,14 @@
                 android:icon="@drawable/ic_language"
                 android:id="@+id/menu_item_language" />
             <item android:title="@string/Test_Mode"
-                android:icon="@drawable/ic_test_mode"
+                android:icon="@drawable/ic_test"
                 android:id="@+id/menu_item_test_mode"
-                app:actionLayout="@layout/switch_test"/>
+                app:actionLayout="@layout/switch_test"
+                android:visible="false"/>
             <item android:title="@string/Actions"
                 android:icon="@drawable/ic_ree"
-                android:id="@+id/menu_item_actions" />
+                android:id="@+id/menu_item_actions"
+                android:visible="false"/>
         </menu>
     </item>
 </menu>

@@ -17,7 +17,6 @@ import com.boardtek.selection.R;
 import com.boardtek.selection.datamodel.Action;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ActionAdapter extends RecyclerView.Adapter<ActionAdapter.ActionViewHolder> {
 

@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -20,22 +21,28 @@ import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
+import com.boardtek.appcenter.AppCenter;
 import com.boardtek.appcenter.NetworkInformation;
 import com.boardtek.selection.Constant;
 import com.boardtek.selection.R;
 import com.boardtek.selection.adapter.datacontent.DataContentAdapter;
+import com.boardtek.selection.adapter.datapp.DataPpAdapter;
 import com.boardtek.selection.databinding.DataContentLayoutBinding;
+import com.boardtek.selection.databinding.DataPpLayoutBinding;
 import com.boardtek.selection.databinding.EnterNumBinding;
 import com.boardtek.selection.databinding.FragmentHomeBinding;
 import com.boardtek.selection.datamodel.DataContent;
+import com.boardtek.selection.datamodel.DataPp;
 import com.boardtek.selection.datamodel.Selection;
 import com.boardtek.selection.db.SelectionRoomDatabase;
+import com.boardtek.selection.net.WifiReceiver;
 import com.boardtek.selection.ui.v.Loading;
 import com.boardtek.selection.worker.LoadSingleData;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.jetbrains.annotations.NotNull;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -46,10 +53,17 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     private FragmentHomeBinding fragmentHomeBinding;
     private Loading loading;
     private EnterNumBinding enterNumBinding;
+    //Network
+    private NetworkInformation networkInformation;
+    //WIFI
+    private WifiReceiver wifiReceiver;
+
+    //
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
         homeViewModel =
                 ViewModelProviders.of(this).get(HomeViewModel.class);
         NetworkInformation.init(requireContext());
@@ -58,18 +72,28 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         View root = fragmentHomeBinding.getRoot();
         fragmentHomeBinding.fab.setOnClickListener(this);
 
+        setOnlineText();
+
         return root;
     }
 
+    private void setOnlineText() {
+        if (NetworkInformation.isConnected(requireContext())) {
+            fragmentHomeBinding.tOnline.setText(getString(R.string.online));
+        } else {
+            fragmentHomeBinding.tOnline.setText(getString(R.string.offline));
+        }
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+    }
 
     @SuppressLint("SetTextI18n")
     private void setSelection(@NotNull Selection selection) {
 
-        if(Constant.mode == Constant.MODE_OFFICIAL) {
-            fragmentHomeBinding.tContentMode.setText("OFFICIAL");
-        }else {
-            fragmentHomeBinding.tContentMode.setText("TEST");
-        }
+        setOnlineText();
         fragmentHomeBinding.tContentProgramId.setText(getString(R.string.programid)  +selection.getProgramId());
         fragmentHomeBinding.tContentVendor.setText(getString(R.string.vendor) +"\n" +selection.getVendorTitle());
         fragmentHomeBinding.tContentIsPaused.setText(getString(R.string.ispaused) +"\n" +selection.isPause());
@@ -102,22 +126,23 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
                             Data in = new Data.Builder()
                                     .putString("url",Constant.getUrl(Constant.mode,Constant.ACTION_BY_PROGRAM_ID))
                                     .putString("programId",id)
+                                    .putString("mac",NetworkInformation.macAddress)
+                                    .putString("uSn", String.valueOf(AppCenter.uSn))
+                                    .putString("mobileSn", String.valueOf(AppCenter.mobileSn))
                                     .putInt("mode",Constant.mode)
                                     .build();
                             OneTimeWorkRequest loadSingleDataById = new OneTimeWorkRequest.Builder(LoadSingleData.class)
                                     .setInputData(in)
                                     .build();
                             WorkManager.getInstance(requireContext()).beginUniqueWork("Single",ExistingWorkPolicy.REPLACE,loadSingleDataById).enqueue();
+
+                            requireActivity().getSharedPreferences("Setting",Context.MODE_PRIVATE)
+                                    .edit()
+                                    .putBoolean("onStopRun",false)
+                                    .apply();
+
                         } else if(!NetworkInformation.isConnected(requireContext())){
-                            if (Constant.mode == Constant.MODE_OFFICIAL) {
-                                SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
-                                    homeViewModel.getSelectionMutableLiveData().postValue(SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelection(Integer.parseInt(id)));
-                                });
-                            }else {
-                                SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
-                                    homeViewModel.getSelectionMutableLiveData().postValue(SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelectionTest(Integer.parseInt(id)));
-                                });
-                            }
+                            setSelectionById(id);
                         }
                     }).show();
 
@@ -133,7 +158,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             Log.d(TAG, list.toString());
             DataContentLayoutBinding dataContentLayoutBinding = DataContentLayoutBinding.inflate(getLayoutInflater());
             View view = dataContentLayoutBinding.getRoot();
-            RecyclerView recyclerView = dataContentLayoutBinding.recycler;
+            RecyclerView recyclerView = dataContentLayoutBinding.recyclerDataContent;
             recyclerView.setHasFixedSize(true);
             recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
             recyclerView.setAdapter(new DataContentAdapter(list));
@@ -148,8 +173,16 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
                 Toast.makeText(requireContext(), getString(R.string.n_null), Toast.LENGTH_SHORT).show();
                 return;
             }
+            List<DataPp> list = new Gson().fromJson(json, new TypeToken<List<DataPp>>() {}.getType());
+
+            DataPpLayoutBinding dataPpLayoutBinding = DataPpLayoutBinding.inflate(getLayoutInflater());
+            View view = dataPpLayoutBinding.getRoot();
+            RecyclerView recyclerView = dataPpLayoutBinding.recyclerDataPp;
+            recyclerView.setHasFixedSize(true);
+            recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+            recyclerView.setAdapter(new DataPpAdapter(list));
             new MaterialAlertDialogBuilder(requireContext())
-                    .setMessage(json)
+                    .setView(view)
                     .show();
         }
     }
@@ -158,29 +191,34 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onStop() {
         super.onStop();
+        Log.d(TAG,"onStop");
         homeViewModel.getSelectionMutableLiveData().removeObservers(getViewLifecycleOwner());
         homeViewModel.loadSingleState.removeObservers(getViewLifecycleOwner());
+
+        requireActivity().getSharedPreferences("Setting",Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean("onStopRun",true)
+                .apply();
     }
 
     @Override
     public void onStart() {
         super.onStart();
-
+        Log.d(TAG,"onStart");
         //observer data to show on UI
         homeViewModel.getSelectionMutableLiveData().observe(getViewLifecycleOwner(), selection -> {
+            Log.d("DFFFFFF",selection.toString());
             if (selection == null) {
                 new MaterialAlertDialogBuilder(requireContext())
                         .setTitle(R.string.notexit)
                         .setIcon(R.drawable.ic_404_error)
-                        .setMessage(R.string.check_network)
+                        .setMessage((NetworkInformation.isConnected(requireContext())? getString(R.string.please_research) : getString(R.string.check_network)))
                         .show();
                 return;
             }
             this.requireActivity().getSharedPreferences("Setting", Context.MODE_PRIVATE).edit().putString("TEMP_ID", selection.getProgramId()).apply();
             setSelection(selection);
         });
-
-
         homeViewModel.loadSingleState.observe(
                 getViewLifecycleOwner(),
                 workInfos -> {
@@ -193,34 +231,44 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
                             case SUCCEEDED:
                                 String id = workInfos.get(0).getOutputData().getString("programId");
 //                            this.requireActivity().getSharedPreferences("Setting", Context.MODE_PRIVATE).edit().putString("TEMP_ID", id).apply();
-                                if(Constant.mode == Constant.MODE_OFFICIAL) {
-                                    SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
-                                        homeViewModel.getSelectionMutableLiveData().postValue(
-                                                SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelection(Integer.parseInt(id))
-                                        );
-                                    });
-                                } else {
-                                    SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
-                                        homeViewModel.getSelectionMutableLiveData().postValue(
-                                                SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelectionTest(Integer.parseInt(id))
-                                        );
-                                    });
-                                }
+                                setSelectionById(id);
                                 Loading.closeLoadingView();
                                 break;
                             case FAILED:
                                 Loading.closeLoadingView();
-                            new MaterialAlertDialogBuilder(requireContext())
-                                    .setTitle(R.string.not_exist)
-                                    .setIcon(R.drawable.ic_404_error)
-                                    //.setMessage("Your search is not exist")
-                                    .setPositiveButton(R.string.ok, null)
-                                    .show();
+                                String tempId = requireContext().getSharedPreferences("Setting",Context.MODE_PRIVATE).getString("TEMP_ID","0");
+                                setSelectionById(tempId);
+
+                                boolean onStopRun = requireContext().getSharedPreferences("Setting",Context.MODE_PRIVATE).getBoolean("onStopRun",false);
+                                if(onStopRun) return;
+                                new MaterialAlertDialogBuilder(requireContext())
+                                        .setTitle(R.string.not_exist)
+                                        .setIcon(R.drawable.ic_404_error)
+                                        .setMessage(getString(R.string.search_is_not_exit)+","+getString(R.string.please_research))
+                                        .setPositiveButton(R.string.ok, null)
+                                        .show();
                                 break;
                         }
 
                 }
         );
     }
+
+    private void setSelectionById(String id) {
+        if (Constant.mode == Constant.MODE_OFFICIAL) {
+            SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
+                homeViewModel.getSelectionMutableLiveData().postValue(
+                        SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelection(Integer.parseInt(id))
+                );
+            });
+        } else {
+            SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
+                homeViewModel.getSelectionMutableLiveData().postValue(
+                        SelectionRoomDatabase.getDatabase(getContext()).dbDao().getSelectionTest(Integer.parseInt(id))
+                );
+            });
+        }
+    }
+
 
 }
