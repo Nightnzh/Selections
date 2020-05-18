@@ -57,5 +57,8 @@
     <string name="delete_local_data">Delete Local Data</string>
     <string name="synchronize_data">Synchronize Data</string>
     <string name="ask_for_a_lot_data">Take a second.</string>
+    <string name="ask_for_delete_all_data">Are you sure to delete all data?</string>
+    <string name="done">Done</string>
+    <string name="fail">Fail</string>
 
 </resources>

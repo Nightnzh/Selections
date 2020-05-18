@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Selections</string>
+    <string name="app_name">壓機程式查詢</string>
     <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
     <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>
     <string name="nav_header_title" translatable="false">Android Studio</string>
@@ -57,4 +57,7 @@
     <string name="delete_local_data">Delete Local Data</string>
     <string name="ask_for_a_lot_data">Take a second.</string>
     <string name="synchronize_data">Synchronize Data</string>
+    <string name="ask_for_delete_all_data">Are you sure to delete all local data?</string>
+    <string name="done">Done</string>
+    <string name="fail">Fail</string>
 </resources>

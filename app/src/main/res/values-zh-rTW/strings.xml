@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Selections</string>
+    <string name="app_name">壓機程式查詢</string>
     <string name="language">語言</string>
     <string name="Test_Mode">測試模式</string>
     <string name="System_time">系統時間:</string>
@@ -38,9 +38,12 @@
     <string name="thermo_time">溫度時間:</string>
     <string name="please_research">請重新搜尋。</string>
     <string name="search_is_not_exit">你的搜尋不存在</string>
-    <string name="online">線上模式</string>
-    <string name="offline">離線模式</string>
+    <string name="online">線上</string>
+    <string name="offline">離線</string>
     <string name="delete_local_data">刪除手機暫存資料</string>
     <string name="ask_for_a_lot_data">可能需要一些時間。</string>
     <string name="synchronize_data">同步資料</string>
+    <string name="ask_for_delete_all_data">你確定要刪除所有暫存的資料嗎?</string>
+    <string name="done">完成</string>
+    <string name="fail">失敗</string>
 </resources>

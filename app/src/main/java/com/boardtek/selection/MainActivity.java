@@ -8,11 +8,14 @@ import android.net.ConnectivityManager;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.text.Layout;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
+import android.view.ViewParent;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.TextView;
@@ -23,6 +26,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.annimon.stream.Stream;
 import com.boardtek.appcenter.AppCenter;
 import com.boardtek.appcenter.NetworkInformation;
 import com.boardtek.selection.adapter.language.LanguageAdapter;
@@ -82,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
     private RequestQueue volleyQueue;
     private SwitchCompat switchTest;
     private NavController navController;
+    private NavigationView navigationView;
 
     //WIFI
     private WifiReceiver wifiReceiver;
@@ -109,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
         activityMainBinding = ActivityMainBinding.inflate(getLayoutInflater());
         navHeaderMainBinding = NavHeaderMainBinding.bind(activityMainBinding.navView.getHeaderView(0));
 
-        setContentView(activityMainBinding.getRoot().getRootView());
+        setContentView(activityMainBinding.getRoot());
 
 
         //Network
@@ -140,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
 //        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         DrawerLayout drawer = activityMainBinding.drawerLayout;
 //        NavigationView navigationView = findViewById(R.id.nav_view);
-        NavigationView navigationView = activityMainBinding.navView;
+        navigationView = activityMainBinding.navView;
 
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
@@ -185,6 +190,8 @@ public class MainActivity extends AppCompatActivity {
                 .setView(languageLayoutBinding.getRoot())
                 .create();
 
+
+        this.getSharedPreferences("Setting",MODE_PRIVATE).edit().putBoolean("isConnected",NetworkInformation.isConnected(this)).apply();
     }
 
     @Override
@@ -277,10 +284,9 @@ public class MainActivity extends AppCompatActivity {
             //同步資料
             case R.id.update_data:
                 if (NetworkInformation.isConnected(this)) {
-
                     new MaterialAlertDialogBuilder(this)
                             .setTitle(R.string.synchronize_data)
-                            .setIcon(R.drawable.ic_syncronization)
+                            .setIcon(R.drawable.ic_download)
                             .setMessage(R.string.ask_for_a_lot_data)
                             .setPositiveButton(getString(R.string.cancel),null)
                             .setNegativeButton(getString(R.string.ok),(dialog, which) -> {
@@ -310,29 +316,24 @@ public class MainActivity extends AppCompatActivity {
                             .show();
                 return true;
             case R.id.delete_data:
-                String ms = "";
-                if(Constant.lang.equals(Locale.US.getCountry())){
-                    ms = (Constant.mode == Constant.MODE_OFFICIAL ? "Are you sure to delete all data of " + getString(R.string.official) : "Are you sure to delete all data of "+ getString(R.string.test)) + " ?";
-                } else {
-                    ms = (Constant.mode == Constant.MODE_OFFICIAL ? "你確定要刪除"  + getString(R.string.official) : "你確定要刪除" + getString(R.string.test)) + "的全部資料媽?";
-                }
+
 
                 new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.delete_local_data)
                         .setIcon(R.drawable.ic_can)
-                        .setMessage(ms)
+                        .setMessage(R.string.ask_for_delete_all_data)
                         .setPositiveButton(R.string.cancel,null)
                         .setNegativeButton(getString(R.string.ok),(dialog, which) -> {
                             if(Constant.mode == Constant.MODE_OFFICIAL){
                                 SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
                                     SelectionRoomDatabase.getDatabase(this).dbDao().deleteAll();
                                 });
-                                Toast.makeText(this, R.string.delete_all, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(this, R.string.done, Toast.LENGTH_SHORT).show();
                             } else {
                                 SelectionRoomDatabase.databaseWriteExecutor.execute(() -> {
                                     SelectionRoomDatabase.getDatabase(this).dbDao().deleteTestAll();
                                 });
-                                Toast.makeText(this, R.string.delete_all, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(this, R.string.done, Toast.LENGTH_SHORT).show();
                             }
                         })
                         .show();
@@ -430,7 +431,6 @@ public class MainActivity extends AppCompatActivity {
     public void OnNetworkChange(Boolean isConnected, WifiInfo wifiInfo) {
 
 
-
         if (isConnected) {
             NetworkInformation.init(this);
             String ssid = wifiInfo == null ? "" : wifiInfo.getSSID();
@@ -439,9 +439,9 @@ public class MainActivity extends AppCompatActivity {
             NetworkInformation.clear();
             navHeaderMainBinding.tHeaderWifiName.setText("null");
         }
-        navController.popBackStack();
-        navController.navigate(R.id.nav_home);
-
+        boolean isConnectedTemp = getSharedPreferences("Setting",MODE_PRIVATE).getBoolean("isConnected",true);
+        if(isConnected==isConnectedTemp) return;
+        navController.navigate(R.id.action_nav_home_self);
     }
 
     //暫停, 註銷廣播
@@ -450,5 +450,14 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         if (wifiReceiver!=null) unregisterReceiver(wifiReceiver);
     }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        this.getSharedPreferences("Setting",MODE_PRIVATE).edit().putBoolean("isConnected",NetworkInformation.isConnected(this)).apply();
+
+    }
+
+
 }
 

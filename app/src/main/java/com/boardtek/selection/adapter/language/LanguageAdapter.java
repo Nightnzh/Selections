@@ -53,6 +53,7 @@ public class LanguageAdapter extends RecyclerView.Adapter<LanguageAdapter.Langua
                 holder.bindTo(R.drawable.tw,"中文");
                 holder.itemView.setOnClickListener(v -> {
                     context.getSharedPreferences("Setting",MODE_PRIVATE).edit().putString("Language",Locale.TAIWAN.getCountry()).apply();
+
                     Intent restart = new Intent(context, MainActivity.class);
                     ((MainActivity)context).finish();
                     context.startActivity(restart);

@@ -80,8 +80,10 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     private void setOnlineText() {
         if (NetworkInformation.isConnected(requireContext())) {
             fragmentHomeBinding.tOnline.setText(getString(R.string.online));
+            fragmentHomeBinding.tOnline.setVisibility(View.GONE);
         } else {
             fragmentHomeBinding.tOnline.setText(getString(R.string.offline));
+            fragmentHomeBinding.tOnline.setVisibility(View.VISIBLE);
         }
     }
 
@@ -207,7 +209,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         Log.d(TAG,"onStart");
         //observer data to show on UI
         homeViewModel.getSelectionMutableLiveData().observe(getViewLifecycleOwner(), selection -> {
-            Log.d("DFFFFFF",selection.toString());
+//            Log.d("DFFFFFF",selection.toString());
             if (selection == null) {
                 new MaterialAlertDialogBuilder(requireContext())
                         .setTitle(R.string.notexit)
@@ -236,8 +238,8 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
                                 break;
                             case FAILED:
                                 Loading.closeLoadingView();
-                                String tempId = requireContext().getSharedPreferences("Setting",Context.MODE_PRIVATE).getString("TEMP_ID","0");
-                                setSelectionById(tempId);
+//                                String tempId = requireContext().getSharedPreferences("Setting",Context.MODE_PRIVATE).getString("TEMP_ID","0");
+//                                setSelectionById(tempId);
 
                                 boolean onStopRun = requireContext().getSharedPreferences("Setting",Context.MODE_PRIVATE).getBoolean("onStopRun",false);
                                 if(onStopRun) return;
@@ -269,6 +271,4 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             });
         }
     }
-
-
 }
